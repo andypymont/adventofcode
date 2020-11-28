@@ -9,6 +9,7 @@ verify_ssl = true
 advent-of-code-data = "*"
 jupyter = "*"
 notebook = "*"
+numpy = "*"
 
 [requires]
 python_version = "3.8"
