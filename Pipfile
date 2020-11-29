@@ -10,6 +10,7 @@ advent-of-code-data = "*"
 jupyter = "*"
 notebook = "*"
 numpy = "*"
+pandas = "*"
 
 [requires]
 python_version = "3.8"
