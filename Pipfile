@@ -12,6 +12,7 @@ notebook = "*"
 numpy = "*"
 pandas = "*"
 regex = "*"
+z3-solver = "*"
 
 [requires]
 python_version = "3.9"
