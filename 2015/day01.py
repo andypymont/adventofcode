@@ -48,11 +48,14 @@ def test_part2():
     assert enters_basement(')') == 1
     assert enters_basement('()())') == 5
 
-if __name__ == '__main__':
+def main():
+    """
+    Calculate and output the solutions based on the real puzzle input.
+    """
     data = aocd.get_data(year=2015, day=1)
 
-    p1 = floor_reached(data)
-    p2 = enters_basement(data)
+    print(f'Part 1: {floor_reached(data)}')
+    print(f'Part 2: {enters_basement(data)}')
 
-    print(f'Part 1: {p1}')
-    print(f'Part 2: {p2}')
+if __name__ == '__main__':
+    main()

@@ -39,11 +39,15 @@ def test_part2():
     assert ribbon_needed('2x3x4') == 34
     assert ribbon_needed('1x1x10') == 14
 
-if __name__ == '__main__':
+def main():
+    """
+    Calculate and output the solutions based on the real puzzle input.
+    """
     data = aocd.get_data(year=2015, day=2)
+    presents = data.split('\n')
 
-    p1 = sum(wrap_needed(present) for present in data.split('\n'))
-    p2 = sum(ribbon_needed(present) for present in data.split('\n'))
+    print(f'Part 1: {sum(wrap_needed(present) for present in presents)}')
+    print(f'Part 2: {sum(ribbon_needed(present) for present in presents)}')
 
-    print(f'Part 1: {p1}')
-    print(f'Part 2: {p2}')
+if __name__ == '__main__':
+    main()
