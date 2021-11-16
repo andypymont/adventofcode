@@ -5,19 +5,19 @@ https://adventofcode.com/YYYY/day/D
 
 import aocd # type: ignore
 
-def test_part1():
+def test_part1() -> None:
     """
     Examples for Part 1.
     """
     assert False
 
-def test_part2():
+def test_part2() -> None:
     """
     Examples for Part 2.
     """
     assert False
 
-def main():
+def main() -> None:
     """
     Calculate and output the solutions based on the real puzzle input.
     """
