@@ -13,6 +13,9 @@ numpy = "*"
 pandas = "*"
 regex = "*"
 z3-solver = "*"
+mypy = "*"
+pylint = "*"
+pytest = "*"
 
 [requires]
 python_version = "3.9"
