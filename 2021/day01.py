@@ -4,7 +4,6 @@ https://adventofcode.com/2021/day/1
 """
 
 from itertools import tee
-from operator import sub
 from typing import Any, Iterable, Tuple
 import aocd # type: ignore
 
@@ -13,20 +12,20 @@ def pairwise(iterable: Iterable[Any]) -> Iterable[Tuple[Any, Any]]:
     Pairwise (as implemented in itertools in Python 3.10)
     e.g. pairwise('ABCDEFG') --> AB BC CD DE EF FG
     """
-    a, b = tee(iterable)
-    next(b, None)
-    return zip(a, b)
+    one, two = tee(iterable)
+    next(two, None)
+    return zip(one, two)
 
-def triwise(iterable: Iterable[Any]) -> Iterable[Tuple[Any, Any]]:
+def triwise(iterable: Iterable[Any]) -> Iterable[Tuple[Any, Any, Any]]:
     """
     Three-variable version of pairwise.
     e.g. triwise('ABCDEFG') --> ABC BCD CDE DEF EFG
     """
-    a, b, c = tee(iterable, 3)
-    next(b, None)
-    next(c, None)
-    next(c, None)
-    return zip(a, b, c)
+    one, two, three = tee(iterable, 3)
+    next(two, None)
+    next(three, None)
+    next(three, None)
+    return zip(one, two, three)
 
 def test_part1() -> None:
     """
