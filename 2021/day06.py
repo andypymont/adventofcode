@@ -28,7 +28,7 @@ def progress(fish: Dict[int, int], days: int) -> Dict[int, int]:
         }
     return fish
 
-def fish_count(fish: Dict[int, int], days=int) -> int:
+def fish_count(fish: Dict[int, int], days: int) -> int:
     return sum(progress(fish, days).values())
 
 def test_part1() -> None:
