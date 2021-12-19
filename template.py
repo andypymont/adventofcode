@@ -11,11 +11,11 @@ def test_part1() -> None:
     """
     assert False
 
-def test_part2() -> None:
-    """
-    Examples for Part 2.
-    """
-    assert False
+# def test_part2() -> None:
+#     """
+#     Examples for Part 2.
+#     """
+#     assert False
 
 def main() -> None:
     """
