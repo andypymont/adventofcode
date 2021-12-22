@@ -6,22 +6,23 @@ https://adventofcode.com/2018/day/25
 from collections import deque
 from itertools import permutations
 from typing import Dict, Sequence, Set, Tuple
-import aocd # type: ignore
+import aocd  # type: ignore
 
 Point = Tuple[int, int, int, int]
 
+
 def manhattan_distance(first: Point, second: Point) -> int:
-    return sum(
-        abs(first[dimension] - second[dimension])
-        for dimension in range(4)
-    )
+    return sum(abs(first[dimension] - second[dimension]) for dimension in range(4))
+
 
 def read_point(line: str) -> Point:
-    w, x, y, z, *_ = line.split(',')
+    w, x, y, z, *_ = line.split(",")
     return (int(w), int(x), int(y), int(z))
 
+
 def read_points(text: str) -> Sequence[Point]:
-    return tuple(read_point(line) for line in text.split('\n'))
+    return tuple(read_point(line) for line in text.split("\n"))
+
 
 def connection_map(points: Sequence[Point]) -> Dict[Point, Set[Point]]:
     connections: Dict[Point, Set[Point]] = {}
@@ -32,16 +33,16 @@ def connection_map(points: Sequence[Point]) -> Dict[Point, Set[Point]]:
             connections[first].add(second)
     return connections
 
+
 def all_reachable(conn_map: Dict[Point, Set[Point]], point: Point) -> Set[Point]:
     reachable = {point}
     explore: deque[Point] = deque(conn_map[point])
     while explore:
         consider = explore.popleft()
         reachable.add(consider)
-        explore.extend(
-            p for p in conn_map[consider] if p not in reachable
-        )
+        explore.extend(p for p in conn_map[consider] if p not in reachable)
     return reachable
+
 
 def constellations(points: Sequence[Point]) -> int:
     count = 0
@@ -55,28 +56,31 @@ def constellations(points: Sequence[Point]) -> int:
 
     return count
 
+
 def test_part1() -> None:
     """
     Examples for Part 1.
     """
-    assert manhattan_distance(
-        (0, 0, 0, 0),
-        (3, 0, 0, 0)
-    ) == 3
-    assert manhattan_distance(
-        (9, 0, 0, 0),
-        (0, 3, 0, 0),
-    ) == 12
-    test_input = '\n'.join((
-        '0,0,0,0',
-        '3,0,0,0',
-        '0,3,0,0',
-        '0,0,3,0',
-        '0,0,0,3',
-        '0,0,0,6',
-        '9,0,0,0',
-        '12,0,0,0',
-    ))
+    assert manhattan_distance((0, 0, 0, 0), (3, 0, 0, 0)) == 3
+    assert (
+        manhattan_distance(
+            (9, 0, 0, 0),
+            (0, 3, 0, 0),
+        )
+        == 12
+    )
+    test_input = "\n".join(
+        (
+            "0,0,0,0",
+            "3,0,0,0",
+            "0,3,0,0",
+            "0,0,3,0",
+            "0,0,0,3",
+            "0,0,0,6",
+            "9,0,0,0",
+            "12,0,0,0",
+        )
+    )
     test1 = (
         (0, 0, 0, 0),
         (3, 0, 0, 0),
@@ -116,13 +120,15 @@ def test_part1() -> None:
     )
     assert constellations(test2) == 4
 
+
 def main() -> None:
     """
     Calculate and output the solutions based on the real puzzle input.
     """
     data = aocd.get_data(year=2018, day=25)
     points = read_points(data)
-    print(f'Part 1: {constellations(points)}')
+    print(f"Part 1: {constellations(points)}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

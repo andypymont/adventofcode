@@ -4,12 +4,14 @@ https://adventofcode.com/2020/day/22
 """
 
 from typing import List, Sequence, Tuple
-import aocd # type: ignore
+import aocd  # type: ignore
 
 Deck = List[int]
 
+
 def read_decks(text: str) -> Sequence[Deck]:
-    return [[int(card) for card in deck.split('\n')[1:]] for deck in text.split('\n\n')]
+    return [[int(card) for card in deck.split("\n")[1:]] for deck in text.split("\n\n")]
+
 
 def play_game(decks: Sequence[Deck]) -> Tuple[Deck, Deck]:
     one, two = decks
@@ -22,8 +24,10 @@ def play_game(decks: Sequence[Deck]) -> Tuple[Deck, Deck]:
 
     return one, two
 
+
 def score(deck: Deck) -> int:
-    return sum(card*(len(deck)-position) for position, card in enumerate(deck))
+    return sum(card * (len(deck) - position) for position, card in enumerate(deck))
+
 
 def play_recursive_game(decks: Sequence[Deck]) -> Tuple[Tuple[Deck, Deck], int]:
     one, two = decks
@@ -40,7 +44,9 @@ def play_recursive_game(decks: Sequence[Deck]) -> Tuple[Tuple[Deck, Deck], int]:
         # if players have large enough decks to recurse, then we do
         card_one, card_two = one[0], two[0]
         if len(one) > card_one and len(two) > card_two:
-            _, winner = play_recursive_game((one[1:card_one+1], two[1:card_two+1]))
+            _, winner = play_recursive_game(
+                (one[1 : card_one + 1], two[1 : card_two + 1])
+            )
 
         # and if not, we just compare the cards as usual
         else:
@@ -57,6 +63,7 @@ def play_recursive_game(decks: Sequence[Deck]) -> Tuple[Tuple[Deck, Deck], int]:
 
     return (one, two), 1 if len(one) > 0 else 2
 
+
 def main() -> None:
     """
     Calculate and output the solutions based on the real puzzle input.
@@ -65,10 +72,11 @@ def main() -> None:
 
     decks = read_decks(data)
     result = play_game(decks)
-    print(f'Part 1: {sum(score(deck) for deck in result)}')
+    print(f"Part 1: {sum(score(deck) for deck in result)}")
 
     decks2, _ = play_recursive_game(decks)
-    print(f'Part 2: {sum(score(deck) for deck in decks2)}')
+    print(f"Part 2: {sum(score(deck) for deck in decks2)}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

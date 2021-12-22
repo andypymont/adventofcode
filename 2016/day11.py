@@ -9,10 +9,11 @@ from functools import reduce
 from operator import add
 from typing import Any, Dict, Iterable, Sequence, Tuple
 import re
-import aocd # type: ignore
+import aocd  # type: ignore
 
-RE_CHIPS = re.compile(r'(?:a|an) (\w+)-compatible microchip')
-RE_GENERATORS = re.compile(r'(?:a|an) (\w+) generator')
+RE_CHIPS = re.compile(r"(?:a|an) (\w+)-compatible microchip")
+RE_GENERATORS = re.compile(r"(?:a|an) (\w+) generator")
+
 
 def read_items(text: str) -> Tuple[int, ...]:
     """
@@ -20,7 +21,7 @@ def read_items(text: str) -> Tuple[int, ...]:
     """
     elements: Dict[str, Tuple[int, int]] = {}
 
-    for floor, line in enumerate(text.split('\n')):
+    for floor, line in enumerate(text.split("\n")):
         for match in RE_CHIPS.finditer(line):
             genfloor, _ = elements.get(match.group(1), (0, 0))
             elements[match.group(1)] = (genfloor, floor)
@@ -29,6 +30,7 @@ def read_items(text: str) -> Tuple[int, ...]:
             elements[match.group(1)] = (floor, chipfloor)
 
     return reduce(add, elements.values())
+
 
 class GameState:
     """
@@ -39,7 +41,7 @@ class GameState:
     def __init__(self, elevator: int, items: Iterable[int]):
         self.elevator = elevator
         items = list(items)
-        item_pairs = (items[i:i+2] for i in range(0, len(items), 2))
+        item_pairs = (items[i : i + 2] for i in range(0, len(items), 2))
         self.items = tuple(item for pair in sorted(item_pairs) for item in pair)
 
     def __eq__(self, other: Any) -> bool:
@@ -49,7 +51,7 @@ class GameState:
         return hash((self.elevator, self.items))
 
     def __repr__(self) -> str:
-        return f'GameState(elevator={self.elevator}, items={repr(self.items)})'
+        return f"GameState(elevator={self.elevator}, items={repr(self.items)})"
 
     def is_legal(self) -> bool:
         """
@@ -59,11 +61,14 @@ class GameState:
         generators = tuple(item for n, item in enumerate(self.items) if n % 2 == 0)
         microchips = tuple(item for n, item in enumerate(self.items) if n % 2 == 1)
         return not any(
-            (generators[n] != microchip and sum(1 for gen in generators if gen == microchip) > 0)
+            (
+                generators[n] != microchip
+                and sum(1 for gen in generators if gen == microchip) > 0
+            )
             for n, microchip in enumerate(microchips)
         )
 
-    def apply_move(self, direction: int, itemindices: Sequence[int]) -> 'GameState':
+    def apply_move(self, direction: int, itemindices: Sequence[int]) -> "GameState":
         """
         Make a move, taking the elevator in the given direction and bringing along the items from
         self.items which have the given indices.
@@ -74,17 +79,30 @@ class GameState:
         )
         return GameState(self.elevator + direction, items)
 
-    def all_possible_moves(self) -> 'Iterable[GameState]':
+    def all_possible_moves(self) -> "Iterable[GameState]":
         """
         Calculate all possible next-moves from this state.
         """
-        reachable = [itemno for itemno, floor in enumerate(self.items) if floor == self.elevator]
-        combos = list(chain(*(combinations(reachable, quantity) for quantity in (1, 2))))
+        reachable = [
+            itemno for itemno, floor in enumerate(self.items) if floor == self.elevator
+        ]
+        combos = list(
+            chain(*(combinations(reachable, quantity) for quantity in (1, 2)))
+        )
 
-        upward = (self.apply_move(+1, combo) for combo in combos) if self.elevator < 3 else tuple()
-        dnward = (self.apply_move(-1, combo) for combo in combos) if self.elevator > 0 else tuple()
+        upward = (
+            (self.apply_move(+1, combo) for combo in combos)
+            if self.elevator < 3
+            else tuple()
+        )
+        dnward = (
+            (self.apply_move(-1, combo) for combo in combos)
+            if self.elevator > 0
+            else tuple()
+        )
 
         return chain(upward, dnward)
+
 
 def find_shortest_solution(start: GameState) -> int:
     """
@@ -101,12 +119,14 @@ def find_shortest_solution(start: GameState) -> int:
             return moves
         if state not in visited:
             search.extend(
-                (moves+1, newstate)
+                (moves + 1, newstate)
                 for newstate in state.all_possible_moves()
-                if newstate.is_legal())
+                if newstate.is_legal()
+            )
             visited.add(state)
 
     return -1
+
 
 def main() -> None:
     """
@@ -116,10 +136,11 @@ def main() -> None:
     items = read_items(data)
 
     state_p1 = GameState(0, items)
-    print(f'Part 1: {find_shortest_solution(state_p1)}')
+    print(f"Part 1: {find_shortest_solution(state_p1)}")
 
     state_p2 = GameState(0, items + (0, 0, 0, 0))
-    print(f'Part 2: {find_shortest_solution(state_p2)}')
+    print(f"Part 2: {find_shortest_solution(state_p2)}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

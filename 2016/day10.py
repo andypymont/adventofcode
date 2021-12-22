@@ -6,10 +6,11 @@ https://adventofcode.com/2016/day/10
 from dataclasses import dataclass
 from typing import Dict, List, Sequence, Tuple
 import re
-import aocd # type: ignore
+import aocd  # type: ignore
 
-re_value = re.compile(r'value (\d+) goes to (\w+) (\d+)')
-re_robot = re.compile(r'bot (\d+) gives low to (\w+) (\d+) and high to (\w+) (\d+)')
+re_value = re.compile(r"value (\d+) goes to (\w+) (\d+)")
+re_robot = re.compile(r"bot (\d+) gives low to (\w+) (\d+) and high to (\w+) (\d+)")
+
 
 @dataclass(frozen=True)
 class Target:
@@ -17,8 +18,10 @@ class Target:
     Target within the system to deliver numbers to - defined by its genre (bot or output) and its
     reference number.
     """
+
     genre: str
     number: int
+
 
 @dataclass
 class Robot:
@@ -26,12 +29,13 @@ class Robot:
     Robot with knowledge of its two recipients/targets. Will wait until receiving its second number
     and then that dispatch them back to the system environment to deliver to their targets.
     """
-    environ: 'Environment'
+
+    environ: "Environment"
     holding: List[int]
     give_low: Target
     give_high: Target
 
-    def __init__(self, environ: 'Environment', match_groups: Sequence[str]):
+    def __init__(self, environ: "Environment", match_groups: Sequence[str]):
         low_genre, low_number, high_genre, high_number = match_groups
         self.environ = environ
         self.holding = []
@@ -48,11 +52,13 @@ class Robot:
             self.environ.deliver(self.give_low, min(self.holding))
             self.environ.deliver(self.give_high, max(self.holding))
 
+
 @dataclass
 class Environment:
     """
     An interconnected system of robots and outputs.
     """
+
     robots: Dict[int, Robot]
     outputs: Dict[int, int]
 
@@ -73,9 +79,9 @@ class Environment:
         Deliver the given number to its target - either storing it in the outputs of this
         Environment object, or delivering it to the relevant robot via its .add(..) method.
         """
-        if target.genre == 'bot':
+        if target.genre == "bot":
             self.robots[target.number].add(value)
-        elif target.genre == 'output':
+        elif target.genre == "output":
             self.outputs[target.number] = value
 
     def find_robot_holding(self, search: Tuple[int, int]) -> int:
@@ -88,6 +94,7 @@ class Environment:
                 return number
         return -1
 
+
 def main() -> None:
     """
     Calculate and output the solutions based on the real puzzle input.
@@ -95,8 +102,9 @@ def main() -> None:
     data = aocd.get_data(year=2016, day=10)
     env = Environment(data)
 
-    print(f'Part 1: {env.find_robot_holding((61, 17))}')
-    print(f'Part 2: {env.outputs[0] * env.outputs[1] * env.outputs[2]}')
+    print(f"Part 1: {env.find_robot_holding((61, 17))}")
+    print(f"Part 2: {env.outputs[0] * env.outputs[1] * env.outputs[2]}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

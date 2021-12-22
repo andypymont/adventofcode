@@ -7,12 +7,13 @@ from dataclasses import dataclass
 from typing import Sequence
 import re
 import numpy as np
-import aocd # type: ignore
+import aocd  # type: ignore
 
-RE_CLAIM = re.compile(r'#(\d+) @ (\d+),(\d+): (\d+)x(\d+)')
+RE_CLAIM = re.compile(r"#(\d+) @ (\d+),(\d+): (\d+)x(\d+)")
+
 
 @dataclass(frozen=True)
-class Claim():
+class Claim:
     number: int
     left: int
     top: int
@@ -28,24 +29,26 @@ class Claim():
         return self.left + self.width
 
     def overlaps(self, claimgrid: np.ndarray) -> int:
-        window = claimgrid[self.top:self.bottom,self.left:self.right]
+        window = claimgrid[self.top : self.bottom, self.left : self.right]
         return sum(1 for item in window.flatten() if item > 1)
 
     @classmethod
-    def from_regex_groups(cls, groups: Sequence[str]) -> 'Claim':
+    def from_regex_groups(cls, groups: Sequence[str]) -> "Claim":
         return cls(*map(int, groups))
 
     @classmethod
-    def all_from_text(cls, text: str) -> Sequence['Claim']:
+    def all_from_text(cls, text: str) -> Sequence["Claim"]:
         return [cls.from_regex_groups(groups) for groups in RE_CLAIM.findall(text)]
+
 
 def claim_grid(claims: Sequence[Claim]) -> np.ndarray:
     width = max(claim.right for claim in claims)
     height = max(claim.bottom for claim in claims)
-    grid = np.zeros((width, height), 'int', order='C')
+    grid = np.zeros((width, height), "int", order="C")
     for claim in claims:
-        grid[claim.top:claim.bottom,claim.left:claim.right] += 1
+        grid[claim.top : claim.bottom, claim.left : claim.right] += 1
     return grid
+
 
 def main() -> None:
     """
@@ -56,8 +59,11 @@ def main() -> None:
     claims = Claim.all_from_text(data)
     grid = claim_grid(claims)
 
-    print(f'Part 1: {sum(1 for item in grid.flatten() if item > 1)}')
-    print(f'Part 2: {next(claim.number for claim in claims if claim.overlaps(grid) == 0)}')
+    print(f"Part 1: {sum(1 for item in grid.flatten() if item > 1)}")
+    print(
+        f"Part 2: {next(claim.number for claim in claims if claim.overlaps(grid) == 0)}"
+    )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

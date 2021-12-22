@@ -191,8 +191,12 @@ https://adventofcode.com/2018/day/19
 # This is a program which finds the sum of the factors of either a large or an extremely large
 # number.
 
+
 def sum_of_factors(target: int) -> int:
-    return target + sum(divisor for divisor in range(1, target//2) if target % divisor == 0)
+    return target + sum(
+        divisor for divisor in range(1, target // 2) if target % divisor == 0
+    )
+
 
 def main() -> None:
     """
@@ -204,8 +208,9 @@ def main() -> None:
         10_551_261,
     )
 
-    print(f'Part 1: {sum_of_factors(targets[0])}')
-    print(f'Part 2: {sum_of_factors(targets[1])}')
+    print(f"Part 1: {sum_of_factors(targets[0])}")
+    print(f"Part 2: {sum_of_factors(targets[1])}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -4,7 +4,8 @@ https://adventofcode.com/2017/day/9
 """
 
 from typing import Tuple
-import aocd # type: ignore
+import aocd  # type: ignore
+
 
 def parse_stream(stream: str) -> Tuple[int, int]:
     groups = []
@@ -18,22 +19,23 @@ def parse_stream(stream: str) -> Tuple[int, int]:
         if in_garbage and cancel:
             cancel = False
         elif in_garbage:
-            if char == '!':
+            if char == "!":
                 cancel = True
-            elif char == '>':
+            elif char == ">":
                 in_garbage = False
             else:
                 garbage += 1
         else:
-            if char == '<':
+            if char == "<":
                 in_garbage = True
-            elif char == '{':
+            elif char == "{":
                 depth += 1
-            elif char == '}':
+            elif char == "}":
                 groups.append(depth)
                 depth -= 1
 
     return sum(groups), garbage
+
 
 def main() -> None:
     """
@@ -42,8 +44,9 @@ def main() -> None:
     data = aocd.get_data(year=2017, day=9)
 
     part1, part2 = parse_stream(data)
-    print(f'Part 1: {part1}')
-    print(f'Part 2: {part2}')
+    print(f"Part 1: {part1}")
+    print(f"Part 2: {part2}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

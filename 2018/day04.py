@@ -7,36 +7,37 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, Sequence, Set
 import re
-import aocd # type: ignore
+import aocd  # type: ignore
 
-re_event = re.compile(r'\[([-: \d]+)\] (.+)')
-re_guard_change = re.compile(r'Guard #(\d+) begins shift')
-re_wakes_up = re.compile(r'wakes up')
-re_falls_asleep = re.compile(r'falls asleep')
+re_event = re.compile(r"\[([-: \d]+)\] (.+)")
+re_guard_change = re.compile(r"Guard #(\d+) begins shift")
+re_wakes_up = re.compile(r"wakes up")
+re_falls_asleep = re.compile(r"falls asleep")
+
 
 @dataclass(frozen=True, eq=True, order=True)
-class Event():
+class Event:
     when: datetime
     event: str
 
     @classmethod
-    def from_regex_groups(cls, groups: Sequence[str]) -> 'Event':
-        return cls(
-            datetime.fromisoformat(groups[0]),
-            groups[1]
-        )
+    def from_regex_groups(cls, groups: Sequence[str]) -> "Event":
+        return cls(datetime.fromisoformat(groups[0]), groups[1])
 
     @classmethod
-    def all_from_text(cls, text: str) -> Sequence['Event']:
-        return sorted([cls.from_regex_groups(groups) for groups in re_event.findall(text)])
+    def all_from_text(cls, text: str) -> Sequence["Event"]:
+        return sorted(
+            [cls.from_regex_groups(groups) for groups in re_event.findall(text)]
+        )
+
 
 @dataclass(frozen=True)
-class Shift():
+class Shift:
     guard: int
     asleep: Set[int]
 
     @classmethod
-    def from_events(cls, guard: int, events: Sequence[Event]) -> 'Shift':
+    def from_events(cls, guard: int, events: Sequence[Event]) -> "Shift":
         awake = True
         fell_asleep = 0
         asleep_mins = set()
@@ -54,7 +55,7 @@ class Shift():
         return cls(guard, asleep_mins)
 
     @classmethod
-    def all_from_events(cls, events: Sequence[Event]) -> Sequence['Shift']:
+    def all_from_events(cls, events: Sequence[Event]) -> Sequence["Shift"]:
         shifts = []
         guard = this_guard_start = -1
         for event_no, event in enumerate(events):
@@ -66,8 +67,9 @@ class Shift():
                 guard = int(guard_change.groups()[0])
         return [cls.from_events(*shift) for shift in shifts]
 
+
 @dataclass(frozen=True)
-class Guard():
+class Guard:
     guard: int
     asleep: Dict[int, int]
 
@@ -85,7 +87,7 @@ class Guard():
         return max(self.asleep.values())
 
     @classmethod
-    def all_from_shifts(cls, shifts: Sequence[Shift]) -> Sequence['Guard']:
+    def all_from_shifts(cls, shifts: Sequence[Shift]) -> Sequence["Guard"]:
         guards = {}
         for shift in shifts:
             if shift.guard not in guards:
@@ -94,6 +96,7 @@ class Guard():
                 guards[shift.guard][minute] += 1
 
         return [cls(guard, asleep) for guard, asleep in guards.items()]
+
 
 def main() -> None:
     """
@@ -108,12 +111,16 @@ def main() -> None:
     guard = next(
         g for g in sorted(guards, key=lambda g: g.total_minutes_asleep, reverse=True)
     )
-    print(f'Part 1: {guard.guard * guard.minute_most_often_asleep}')
+    print(f"Part 1: {guard.guard * guard.minute_most_often_asleep}")
 
     guard = next(
-        g for g in sorted(guards, key=lambda g: g.most_times_asleep_on_same_minute, reverse=True)
+        g
+        for g in sorted(
+            guards, key=lambda g: g.most_times_asleep_on_same_minute, reverse=True
+        )
     )
-    print(f'Part 2: {guard.guard * guard.minute_most_often_asleep}')
+    print(f"Part 2: {guard.guard * guard.minute_most_often_asleep}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

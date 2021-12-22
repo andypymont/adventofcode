@@ -6,45 +6,44 @@ https://adventofcode.com/2018/day/22
 from dataclasses import dataclass
 from heapq import heapify, heappush, heappop
 from typing import Dict, Iterable, Iterator, Sequence, Tuple
-import aocd # type: ignore
-import regex as re # type: ignore
+import aocd  # type: ignore
+import regex as re  # type: ignore
+
 
 @dataclass(frozen=True, order=True)
-class Point():
+class Point:
     y_coord: int
     x_coord: int
 
     @classmethod
-    def from_regex_groups(cls, groups: Sequence[str]) -> 'Point':
+    def from_regex_groups(cls, groups: Sequence[str]) -> "Point":
         x_coord, y_coord = [int(val) for val in groups]
         return cls(y_coord, x_coord)
 
-    def __add__(self, other: 'Point') -> 'Point':
+    def __add__(self, other: "Point") -> "Point":
         return Point(self.y_coord + other.y_coord, self.x_coord + other.x_coord)
 
     @property
-    def neighbours(self) -> Sequence['Point']:
+    def neighbours(self) -> Sequence["Point"]:
         neighbours = [
-            self + direction for direction in (
-                Point(-1, 0),
-                Point(0, 1),
-                Point(1, 0),
-                Point(0, -1)
-            )
+            self + direction
+            for direction in (Point(-1, 0), Point(0, 1), Point(1, 0), Point(0, -1))
         ]
         return [
-            neighbour for neighbour in neighbours
-            if neighbour.x_coord >=0 and neighbour.y_coord >= 0
+            neighbour
+            for neighbour in neighbours
+            if neighbour.x_coord >= 0 and neighbour.y_coord >= 0
         ]
 
+
 @dataclass(frozen=True)
-class Region():
+class Region:
     position: Point
     geologic_index: int
     depth: int
 
     @classmethod
-    def extend_cave_system(cls, location: Point, cave_system: 'CaveSystem') -> 'Region':
+    def extend_cave_system(cls, location: Point, cave_system: "CaveSystem") -> "Region":
         geologic_index = 0
 
         if location != Point(0, 0) and location != cave_system.target:
@@ -53,8 +52,8 @@ class Region():
             elif location.x_coord == 0:
                 geologic_index = location.y_coord * 48271
             else:
-                west = cave_system.get(Point(location.y_coord, location.x_coord-1))
-                north = cave_system.get(Point(location.y_coord-1, location.x_coord))
+                west = cave_system.get(Point(location.y_coord, location.x_coord - 1))
+                north = cave_system.get(Point(location.y_coord - 1, location.x_coord))
                 geologic_index = west.erosion_level * north.erosion_level
 
         region = cls(location, geologic_index, cave_system.depth)
@@ -71,10 +70,11 @@ class Region():
 
     @property
     def terrain(self) -> str:
-        return ('rocky', 'wet', 'narrow')[self.risk_level]
+        return ("rocky", "wet", "narrow")[self.risk_level]
+
 
 @dataclass
-class CaveSystem():
+class CaveSystem:
     system: Dict[Point, Region]
     target: Point
     depth: int
@@ -86,9 +86,7 @@ class CaveSystem():
     def get(self, location: Point) -> Region:
         if location in self.system:
             return self.system[location]
-        return self.add(
-            Point(max(location.y_coord, 0), max(location.x_coord, 0))
-        )
+        return self.add(Point(max(location.y_coord, 0), max(location.x_coord, 0)))
 
     def add(self, location: Point) -> Region:
         geologic_index = 0
@@ -99,8 +97,8 @@ class CaveSystem():
             elif location.x_coord == 0:
                 geologic_index = location.y_coord * 48271
             else:
-                west = self.get(Point(location.y_coord, location.x_coord-1))
-                north = self.get(Point(location.y_coord-1, location.x_coord))
+                west = self.get(Point(location.y_coord, location.x_coord - 1))
+                north = self.get(Point(location.y_coord - 1, location.x_coord))
                 geologic_index = west.erosion_level * north.erosion_level
 
         region = Region(location, geologic_index, self.depth)
@@ -109,19 +107,18 @@ class CaveSystem():
 
     def extend(self) -> None:
         for location in (
-            Point(y, x) for x in range(self.target.x_coord+1)
-            for y in range(self.target.y_coord+1)
+            Point(y, x)
+            for x in range(self.target.x_coord + 1)
+            for y in range(self.target.y_coord + 1)
         ):
             self.add(location)
 
-INACCESSIBLE_TERRAIN = {
-    'climbing gear': 'narrow',
-    'torch': 'wet',
-    'neither': 'rocky'
-}
+
+INACCESSIBLE_TERRAIN = {"climbing gear": "narrow", "torch": "wet", "neither": "rocky"}
+
 
 @dataclass(frozen=True, order=True)
-class Equipment():
+class Equipment:
     name: str
 
     @property
@@ -131,34 +128,38 @@ class Equipment():
     def is_valid_in_terrain(self, terrain: str) -> bool:
         return terrain != self.inaccessible_terrain
 
-    def switch(self, terrain: str) -> 'Equipment':
+    def switch(self, terrain: str) -> "Equipment":
         return next(
-            Equipment(equip) for equip, inaccess in INACCESSIBLE_TERRAIN.items()
+            Equipment(equip)
+            for equip, inaccess in INACCESSIBLE_TERRAIN.items()
             if equip != self.name and inaccess != terrain
         )
 
+
 @dataclass(frozen=True, order=True)
-class SearchState():
+class SearchState:
     minutes: int
     position: Point
     equipment: Equipment
 
     @classmethod
-    def initial_state(cls) -> 'SearchState':
-        return cls(0, Point(0, 0), Equipment('climbing gear'))
+    def initial_state(cls) -> "SearchState":
+        return cls(0, Point(0, 0), Equipment("climbing gear"))
 
     def accessible_neighbours(self, cave_system: CaveSystem) -> Iterable[Point]:
         return (
-            loc for loc in self.position.neighbours
+            loc
+            for loc in self.position.neighbours
             if self.equipment.is_valid_in_terrain(cave_system.get(loc).terrain)
         )
 
-    def possible_next_steps(self, cave_system: CaveSystem) -> Iterator['SearchState']:
+    def possible_next_steps(self, cave_system: CaveSystem) -> Iterator["SearchState"]:
         for location in self.accessible_neighbours(cave_system):
             yield SearchState(self.minutes + 1, location, self.equipment)
 
         equip = self.equipment.switch(cave_system.get(self.position).terrain)
         yield SearchState(self.minutes + 7, self.position, equip)
+
 
 def find_shortest_route(cave: CaveSystem) -> int:
     best_routes: Dict[Tuple[Point, Equipment], int] = {}
@@ -179,20 +180,24 @@ def find_shortest_route(cave: CaveSystem) -> int:
 
     return -1
 
+
 def main() -> None:
     """
     Calculate and output the solutions based on the real puzzle input.
     """
     data = aocd.get_data(year=2018, day=22)
 
-    depth = int(re.compile(r'depth: (\d+)').findall(data)[0])
-    target = Point.from_regex_groups(re.compile(r'target: (\d+),(\d+)').findall(data)[0])
+    depth = int(re.compile(r"depth: (\d+)").findall(data)[0])
+    target = Point.from_regex_groups(
+        re.compile(r"target: (\d+),(\d+)").findall(data)[0]
+    )
 
     cave = CaveSystem({}, target, depth)
     cave.extend()
-    print(f'Part 1: {cave.risk_level}')
+    print(f"Part 1: {cave.risk_level}")
 
-    print(f'Part 2: {find_shortest_route(cave)}')
+    print(f"Part 2: {find_shortest_route(cave)}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

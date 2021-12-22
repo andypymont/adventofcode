@@ -8,7 +8,8 @@ https://adventofcode.com/2016/day/19
 
 from typing import Sequence
 import numpy as np
-import aocd # type: ignore
+import aocd  # type: ignore
+
 
 def who_wins(elfcount: int) -> int:
     """
@@ -18,13 +19,15 @@ def who_wins(elfcount: int) -> int:
     binary = np.binary_repr(elfcount)
     return int(binary[1:] + binary[0], 2)
 
+
 class Elf:
     """
     An elf, sat in the circle and ready for the Josephus-inspired game.
     """
+
     number: int
-    prev: 'Elf'
-    next: 'Elf'
+    prev: "Elf"
+    next: "Elf"
 
     def __init__(self, number: int):
         self.number = number
@@ -37,15 +40,16 @@ class Elf:
         self.prev.next = self.next
 
     @classmethod
-    def circle(cls, length: int) -> 'Sequence[Elf]':
+    def circle(cls, length: int) -> "Sequence[Elf]":
         """
         Instatiate a circle of elves of the given length, each aware of its neighbours.
         """
-        circle = [cls(x) for x in range(1, length+1)]
+        circle = [cls(x) for x in range(1, length + 1)]
         for index in range(length):
-            circle[index].prev = circle[(index-1) % length]
-            circle[index].next = circle[(index+1) % length]
+            circle[index].prev = circle[(index - 1) % length]
+            circle[index].next = circle[(index + 1) % length]
         return circle
+
 
 def who_wins_opposite(elfcount: int) -> int:
     """
@@ -54,9 +58,9 @@ def who_wins_opposite(elfcount: int) -> int:
     circle = Elf.circle(elfcount)
 
     elf = circle[0]
-    mid = circle[int(elfcount/2)]
+    mid = circle[int(elfcount / 2)]
 
-    for theft in range(elfcount-1):
+    for theft in range(elfcount - 1):
         mid.delete()
         mid = mid.next
         if (elfcount - theft) % 2 == 1:
@@ -65,6 +69,7 @@ def who_wins_opposite(elfcount: int) -> int:
 
     return elf.number
 
+
 def main() -> None:
     """
     Calculate and output the solutions based on the real puzzle input.
@@ -72,8 +77,9 @@ def main() -> None:
     data = aocd.get_data(year=2016, day=19)
     elfcount = int(data)
 
-    print(f'Part 1: {who_wins(elfcount)}')
-    print(f'Part 2: {who_wins_opposite(elfcount)}')
+    print(f"Part 1: {who_wins(elfcount)}")
+    print(f"Part 2: {who_wins_opposite(elfcount)}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

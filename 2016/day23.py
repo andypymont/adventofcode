@@ -5,103 +5,119 @@ https://adventofcode.com/2016/day/23
 
 from collections import deque
 from typing import Callable, Dict, List, Sequence
-import aocd # type: ignore
+import aocd  # type: ignore
 
 Registers = Dict[str, int]
+
 
 def get(registers: Registers, source: str) -> int:
     if source in registers:
         return registers[source]
     return int(source)
 
+
 def cpy(registers: Registers, args: Sequence[str]) -> None:
     source, dest, *_ = args
     if dest in registers:
         registers[dest] = get(registers, source)
+
 
 def inc(registers: Registers, args: Sequence[str]) -> None:
     register = args[0]
     if register in registers:
         registers[register] += 1
 
+
 def add(registers: Registers, args: Sequence[str]) -> None:
     source, dest, *_ = args
     if dest in registers:
         registers[dest] = get(registers, dest) + get(registers, source)
+
 
 def dec(registers: Registers, args: Sequence[str]) -> None:
     register = args[0]
     if register in registers:
         registers[register] -= 1
 
+
 def mul(registers: Registers, args: Sequence[str]) -> None:
     source, dest, *_ = args
     if dest in registers:
         registers[dest] = get(registers, dest) * get(registers, source)
 
+
 def tgl(instruction: List[str]) -> List[str]:
     cmd, *args = instruction
     if len(args) == 1:
-        if cmd == 'inc':
-            return ['dec', *args]
-        return ['inc', *args]
+        if cmd == "inc":
+            return ["dec", *args]
+        return ["inc", *args]
     if len(args) == 2:
-        if cmd == 'jnz':
-            return ['cpy', *args]
-        return ['jnz', *args]
+        if cmd == "jnz":
+            return ["cpy", *args]
+        return ["jnz", *args]
     return instruction
 
-def patched_instructions(instructions: List[List[str]], current: int) -> List[List[str]]:
+
+def patched_instructions(
+    instructions: List[List[str]], current: int
+) -> List[List[str]]:
     """
     Patch some of the slower-running parts of the code in the given set of instructions with a
     faster-running set to allow part 2 to execute promptly.
     """
-    consider = instructions[current:current+3]
+    consider = instructions[current : current + 3]
     if len(consider) == 3:
-        if all((
-            consider[0][0] == 'dec',
-            consider[1][0] == 'inc',
-            len(consider[0]) > 1 and consider[0][1] != consider[1][1],
-            consider[2][0] == 'jnz',
-            len(consider[0]) > 1 and consider[2][1] == consider[0][1],
-            len(consider[2]) > 2 and consider[2][2] == '-2'
-        )):
+        if all(
+            (
+                consider[0][0] == "dec",
+                consider[1][0] == "inc",
+                len(consider[0]) > 1 and consider[0][1] != consider[1][1],
+                consider[2][0] == "jnz",
+                len(consider[0]) > 1 and consider[2][1] == consider[0][1],
+                len(consider[2]) > 2 and consider[2][2] == "-2",
+            )
+        ):
             return [
-                ['add', consider[0][1], consider[1][1]],
-                ['cpy', '0', consider[0][1]],
-                ['jnz', '0', '0']
+                ["add", consider[0][1], consider[1][1]],
+                ["cpy", "0", consider[0][1]],
+                ["jnz", "0", "0"],
             ]
 
-    consider = instructions[current:current+6]
+    consider = instructions[current : current + 6]
     if len(consider) == 6:
-        if all((
-            consider[0][0] == 'cpy',
-            consider[1][0] == 'inc',
-            consider[2][0] == 'dec',
-            consider[3][0] == 'jnz',
-            len(consider[3]) > 2 and consider[3][2] == '-2',
-            consider[4][0] == 'dec',
-            consider[5][0] == 'jnz',
-            len(consider[5]) > 2 and consider[5][2] == '-5',
-        )):
+        if all(
+            (
+                consider[0][0] == "cpy",
+                consider[1][0] == "inc",
+                consider[2][0] == "dec",
+                consider[3][0] == "jnz",
+                len(consider[3]) > 2 and consider[3][2] == "-2",
+                consider[4][0] == "dec",
+                consider[5][0] == "jnz",
+                len(consider[5]) > 2 and consider[5][2] == "-5",
+            )
+        ):
             return [
-                ['mul', consider[0][1], consider[4][1]],
-                ['add', consider[4][1], consider[1][1]],
-                ['cpy', '0', consider[0][2]],
-                ['cpy', '0', consider[4][1]],
-                ['jnz', '0', '0'],
-                ['jnz', '0', '0']
+                ["mul", consider[0][1], consider[4][1]],
+                ["add", consider[4][1], consider[1][1]],
+                ["cpy", "0", consider[0][2]],
+                ["cpy", "0", consider[4][1]],
+                ["jnz", "0", "0"],
+                ["jnz", "0", "0"],
             ]
 
     return []
 
+
 COMMANDS: Dict[str, Callable[[Registers, Sequence[str]], None]] = {
-    'cpy': cpy,
-    'inc': inc,
-    'dec': dec,
-    'mul': mul,
-    'add': add
+    "cpy": cpy,
+    "inc": inc,
+    "dec": dec,
+    "mul": mul,
+    "add": add,
 }
+
 
 def run_program(text: str, initial_a: int) -> Registers:
     """
@@ -110,24 +126,25 @@ def run_program(text: str, initial_a: int) -> Registers:
     the end of execution.
     """
     registers = dict(a=initial_a, b=0, c=0, d=0)
-    instructions = [instruct.split() for instruct in text.split('\n')]
+    instructions = [instruct.split() for instruct in text.split("\n")]
     current = 0
     replaced_instructions: deque[Sequence[str]] = deque()
 
     while current < len(instructions):
         replaced_instructions.extend(patched_instructions(instructions, current))
         line: Sequence[str] = (
-            replaced_instructions.popleft() if replaced_instructions
+            replaced_instructions.popleft()
+            if replaced_instructions
             else instructions[current]
         )
         cmd, *args = line
 
         if cmd in COMMANDS:
             COMMANDS[cmd](registers, args)
-        elif cmd == 'jnz':
+        elif cmd == "jnz":
             if get(registers, args[0]) != 0:
                 current += get(registers, args[1]) - 1
-        elif cmd == 'tgl':
+        elif cmd == "tgl":
             target = current + get(registers, args[0])
             if 0 <= target < len(instructions):
                 instructions[target] = tgl(instructions[target])
@@ -135,6 +152,7 @@ def run_program(text: str, initial_a: int) -> Registers:
         current += 1
 
     return registers
+
 
 def main() -> None:
     """
@@ -145,5 +163,6 @@ def main() -> None:
     print(f'Part 1: {run_program(data, 7).get("a")}')
     print(f'Part 2: {run_program(data, 12).get("a")}')
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

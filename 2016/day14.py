@@ -7,9 +7,11 @@ from dataclasses import dataclass
 from hashlib import md5
 from typing import Iterator, List
 import re
-import aocd # type: ignore
+import aocd  # type: ignore
 
-RE_THREEPEATS = re.compile(r'(\w)\1{2,2}')
+RE_THREEPEATS = re.compile(r"(\w)\1{2,2}")
+
+
 def first_threepeat(text: str) -> str:
     """
     Find the first 'threepeated' (i.e. repeated 3 times in a row) character in a string.
@@ -17,13 +19,15 @@ def first_threepeat(text: str) -> str:
     search = RE_THREEPEATS.search(text)
     if search:
         return search.group()[0]
-    return ''
+    return ""
+
 
 def md5hex(text: str) -> str:
     """
     Get the hex digest of the MD5 hash of the given string.
     """
-    return md5(text.encode('utf-8')).hexdigest()
+    return md5(text.encode("utf-8")).hexdigest()
+
 
 def stretched_hash(text: str) -> str:
     """
@@ -34,18 +38,23 @@ def stretched_hash(text: str) -> str:
         text = md5hex(text)
     return text
 
+
 @dataclass
 class KeyCandidate:
     """
     A candidate which could be a key (due to a triple character), but is potentially awaiting the
     examination of the following 1000 hashes.
     """
+
     hash: str
     char: str
     index: int
     matched: int
 
-def find_keys(salt: str, quantity: int, stretched: bool = False) -> Iterator[KeyCandidate]:
+
+def find_keys(
+    salt: str, quantity: int, stretched: bool = False
+) -> Iterator[KeyCandidate]:
     """
     Search for an appropriate quantity of keys (i.e. exploring candidates with a triple character
     and checking for a hash in the next 1000 in the stream containing five of the character).
@@ -57,7 +66,9 @@ def find_keys(salt: str, quantity: int, stretched: bool = False) -> Iterator[Key
 
     while returned < quantity:
         hsh = create_hash(salt + str(index))
-        candidates = [candidate for candidate in candidates if candidate.index >= (index - 1000)]
+        candidates = [
+            candidate for candidate in candidates if candidate.index >= (index - 1000)
+        ]
         paired = [candidate for candidate in candidates if candidate.char * 5 in hsh]
 
         if paired:
@@ -75,6 +86,7 @@ def find_keys(salt: str, quantity: int, stretched: bool = False) -> Iterator[Key
 
         index += 1
 
+
 def main() -> None:
     """
     Calculate and output the solutions based on the real puzzle input.
@@ -82,10 +94,11 @@ def main() -> None:
     data = aocd.get_data(year=2016, day=14)
 
     *_, solution1 = find_keys(data, 64)
-    print(f'Part 1: {solution1.index}')
+    print(f"Part 1: {solution1.index}")
 
-    *_, solution2  = find_keys(data, 64, True)
-    print(f'Part 2: {solution2.index}')
+    *_, solution2 = find_keys(data, 64, True)
+    print(f"Part 2: {solution2.index}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

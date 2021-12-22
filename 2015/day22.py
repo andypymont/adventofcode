@@ -5,40 +5,44 @@ https://adventofcode.com/2015/day/22
 
 from dataclasses import dataclass
 from typing import Dict, Set
-import aocd # type: ignore
+import aocd  # type: ignore
+
 
 @dataclass(frozen=True)
 class Effects:
     """
     Effects which are currently active in a battle situation.
     """
+
     shield: int
     poison: int
     recharge: int
 
-    def __add__(self, other: 'Effects') -> 'Effects':
+    def __add__(self, other: "Effects") -> "Effects":
         return self.__class__(
             self.shield + other.shield,
             self.poison + other.poison,
-            self.recharge + other.recharge
+            self.recharge + other.recharge,
         )
 
-    def progress(self) -> 'Effects':
+    def progress(self) -> "Effects":
         """
         Progress to the next turn by reducing all effects by 1, to a minimum of 0.
         """
         return self.__class__(
-            max(0, self.shield - 1),
-            max(0, self.poison - 1),
-            max(0, self.recharge - 1)
+            max(0, self.shield - 1), max(0, self.poison - 1), max(0, self.recharge - 1)
         )
+
+
 NO_EFFECTS = Effects(0, 0, 0)
+
 
 @dataclass(frozen=True)
 class Spell:
     """
     Simple container class for properties of a spell.
     """
+
     cost: int
     damage: int
     heal: int
@@ -46,7 +50,7 @@ class Spell:
     poison: int
     recharge: int
 
-    def is_castable(self, situation: 'Situation') -> bool:
+    def is_castable(self, situation: "Situation") -> bool:
         """
         Return True if this spell is castable in the given situation, and False otherwise.
         """
@@ -64,11 +68,13 @@ class Spell:
         """
         return Effects(self.shield, self.poison, self.recharge)
 
+
 @dataclass(frozen=True)
 class Situation:
     """
     Current situation in a boss battle.
     """
+
     player_hp: int
     boss_hp: int
     boss_damage: int
@@ -77,24 +83,21 @@ class Situation:
     effects: Effects
 
     @classmethod
-    def read_from_input(cls, text: str) -> 'Situation':
+    def read_from_input(cls, text: str) -> "Situation":
         """
         Read the initial situation from the puzzle input.
         """
         from_text: Dict[str, int] = {
             first.lower(): int(second)
-            for first, second
-            in (
-                line.split(': ') for line in text.split('\n')
-            )
+            for first, second in (line.split(": ") for line in text.split("\n"))
         }
         return cls(
             player_hp=50,
-            boss_hp=from_text.get('hit points', 0),
-            boss_damage=from_text.get('damage', 0),
+            boss_hp=from_text.get("hit points", 0),
+            boss_damage=from_text.get("damage", 0),
             mana=500,
             mana_spent=0,
-            effects=Effects(shield=0, recharge=0, poison=0)
+            effects=Effects(shield=0, recharge=0, poison=0),
         )
 
     @property
@@ -150,12 +153,13 @@ class Situation:
         """
         return self.mana + self.recharge
 
+
 def turn(
     situation: Situation,
     damage_player: int = 0,
     damage_boss: int = 0,
     spend_mana: int = 0,
-    new_effects: Effects = NO_EFFECTS
+    new_effects: Effects = NO_EFFECTS,
 ) -> Situation:
     """
     Resolve a turn in the battle, returning the new situation.
@@ -171,8 +175,9 @@ def turn(
         situation.boss_damage,
         situation.mana + situation.recharge - spend_mana,
         situation.mana_spent + spend_mana,
-        situation.effects.progress() + new_effects
+        situation.effects.progress() + new_effects,
     )
+
 
 def boss_turn(situation: Situation) -> Situation:
     """
@@ -181,6 +186,7 @@ def boss_turn(situation: Situation) -> Situation:
     """
     damage_dealt = max(1, situation.boss_damage - situation.armor)
     return turn(situation, damage_player=damage_dealt)
+
 
 def player_turn(situation: Situation, spell: Spell, difficulty: int) -> Situation:
     """
@@ -192,16 +198,18 @@ def player_turn(situation: Situation, spell: Spell, difficulty: int) -> Situatio
         damage_player=(difficulty - spell.heal),
         damage_boss=spell.damage,
         spend_mana=spell.cost,
-        new_effects=spell.effects
+        new_effects=spell.effects,
     )
 
+
 SPELLBOOK: Dict[str, Spell] = {
-    'missile': Spell(cost=53, damage=4, heal=0, shield=0, poison=0, recharge=0),
-    'drain': Spell(cost=73, damage=2, heal=2, shield=0, poison=0, recharge=0),
-    'shield': Spell(cost=113, damage=0, heal=0, shield=6, poison=0, recharge=0),
-    'poison': Spell(cost=173, damage=0, heal=0, shield=0, poison=6, recharge=0),
-    'recharge': Spell(cost=229, damage=0, heal=0, shield=0, poison=0, recharge=5),
+    "missile": Spell(cost=53, damage=4, heal=0, shield=0, poison=0, recharge=0),
+    "drain": Spell(cost=73, damage=2, heal=2, shield=0, poison=0, recharge=0),
+    "shield": Spell(cost=113, damage=0, heal=0, shield=6, poison=0, recharge=0),
+    "poison": Spell(cost=173, damage=0, heal=0, shield=0, poison=6, recharge=0),
+    "recharge": Spell(cost=229, damage=0, heal=0, shield=0, poison=0, recharge=5),
 }
+
 
 def available_moves(situation: Situation, difficulty: int) -> Set[Situation]:
     """
@@ -212,6 +220,7 @@ def available_moves(situation: Situation, difficulty: int) -> Set[Situation]:
         for spell in SPELLBOOK.values()
         if spell.is_castable(situation)
     )
+
 
 def find_cheapest_win(initial_situation: Situation, difficulty: int = 0) -> int:
     """
@@ -231,7 +240,7 @@ def find_cheapest_win(initial_situation: Situation, difficulty: int = 0) -> int:
         if not candidate.game_lost:
             after_boss = boss_turn(candidate)
 
-            if after_boss.game_won: # e.g. due to poison damage
+            if after_boss.game_won:  # e.g. due to poison damage
                 return after_boss.mana_spent
 
             if not after_boss.game_lost:
@@ -242,6 +251,7 @@ def find_cheapest_win(initial_situation: Situation, difficulty: int = 0) -> int:
 
     return -1
 
+
 def main():
     """
     Calculate and output the solutions based on the real puzzle input.
@@ -249,8 +259,9 @@ def main():
     data = aocd.get_data(year=2015, day=22)
     initial = Situation.read_from_input(data)
 
-    print(f'Part 1: {find_cheapest_win(initial)}')
-    print(f'Part 2: {find_cheapest_win(initial, difficulty=1)}')
+    print(f"Part 1: {find_cheapest_win(initial)}")
+    print(f"Part 2: {find_cheapest_win(initial, difficulty=1)}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

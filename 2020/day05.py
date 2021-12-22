@@ -6,12 +6,13 @@ https://adventofcode.com/2020/day/5
 from dataclasses import dataclass
 from typing import Sequence
 import re
-import aocd # type: ignore
+import aocd  # type: ignore
 
-re_seat = re.compile(r'([BF]{7})([LR]{3})')
+re_seat = re.compile(r"([BF]{7})([LR]{3})")
+
 
 @dataclass(frozen=True)
-class Seat():
+class Seat:
     row: int
     col: int
 
@@ -20,20 +21,25 @@ class Seat():
         return (self.row * 8) + self.col
 
     @classmethod
-    def from_regex_groups(cls, groups: Sequence[str]) -> 'Seat':
+    def from_regex_groups(cls, groups: Sequence[str]) -> "Seat":
         return cls(
-            int(groups[0].replace('F', '0').replace('B', '1'), 2),
-            int(groups[1].replace('L', '0').replace('R', '1'), 2)
+            int(groups[0].replace("F", "0").replace("B", "1"), 2),
+            int(groups[1].replace("L", "0").replace("R", "1"), 2),
         )
 
     @classmethod
-    def all_from_text(cls, text: str) -> Sequence['Seat']:
+    def all_from_text(cls, text: str) -> Sequence["Seat"]:
         return [cls.from_regex_groups(groups) for groups in re_seat.findall(text)]
+
 
 def find_seat(boarding_passes: Sequence[Seat]) -> int:
     seat_ids = set(bp.seat_id for bp in boarding_passes)
-    return next(seat for seat in range(1024)
-                if seat not in seat_ids and seat-1 in seat_ids and seat+1 in seat_ids)
+    return next(
+        seat
+        for seat in range(1024)
+        if seat not in seat_ids and seat - 1 in seat_ids and seat + 1 in seat_ids
+    )
+
 
 def main() -> None:
     """
@@ -43,8 +49,9 @@ def main() -> None:
 
     boarding_passes = Seat.all_from_text(data)
 
-    print(f'Part 1: {max(bp.seat_id for bp in boarding_passes)}')
-    print(f'Part 2: {find_seat(boarding_passes)}')
+    print(f"Part 1: {max(bp.seat_id for bp in boarding_passes)}")
+    print(f"Part 2: {find_seat(boarding_passes)}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

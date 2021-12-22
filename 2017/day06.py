@@ -4,14 +4,17 @@ https://adventofcode.com/2017/day/6
 """
 
 from typing import Sequence, Tuple
-import aocd # type: ignore
+import aocd  # type: ignore
+
 
 def read_initial_blocks(text: str) -> Sequence[int]:
-    return tuple(int(val) for val in text.split('\t'))
+    return tuple(int(val) for val in text.split("\t"))
+
 
 def largest_block(blocks: Sequence[int]) -> int:
     largest_size = max(blocks)
     return next(block for block, size in enumerate(blocks) if size == largest_size)
+
 
 def redistribute_from_largest(blocks: Sequence[int]) -> Sequence[int]:
     blocks = list(blocks)
@@ -24,6 +27,7 @@ def redistribute_from_largest(blocks: Sequence[int]) -> Sequence[int]:
         redist -= 1
         bank += 1
     return tuple(blocks)
+
 
 def redistribution_cycles_until_repeat(blocks: Sequence[int]) -> Tuple[int, int]:
     seen = set()
@@ -42,6 +46,7 @@ def redistribution_cycles_until_repeat(blocks: Sequence[int]) -> Tuple[int, int]
 
     return cycles1, cycles2
 
+
 def main() -> None:
     """
     Calculate and output the solutions based on the real puzzle input.
@@ -51,8 +56,9 @@ def main() -> None:
     blocks = read_initial_blocks(data)
     part1, part2 = redistribution_cycles_until_repeat(blocks)
 
-    print(f'Part 1: {part1}')
-    print(f'Part 2: {part2}')
+    print(f"Part 1: {part1}")
+    print(f"Part 2: {part2}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

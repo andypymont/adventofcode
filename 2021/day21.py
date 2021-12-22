@@ -6,14 +6,16 @@ https://adventofcode.com/2021/day/21
 from functools import lru_cache
 from itertools import cycle
 from typing import Tuple
-import aocd # type: ignore
+import aocd  # type: ignore
+
 
 def read_starting_positions(text: str) -> Tuple[int, int]:
-    lines = text.split('\n')
+    lines = text.split("\n")
     return (
-        int(lines[0].split(': ')[-1]) - 1,
-        int(lines[1].split(': ')[-1]) - 1,
+        int(lines[0].split(": ")[-1]) - 1,
+        int(lines[1].split(": ")[-1]) - 1,
     )
+
 
 def play_deterministic_game(p1_pos: int, p2_pos: int) -> Tuple[int, int, int]:
     positions = [p1_pos, p2_pos]
@@ -31,6 +33,7 @@ def play_deterministic_game(p1_pos: int, p2_pos: int) -> Tuple[int, int, int]:
 
     return scores[0], scores[1], roll_count
 
+
 ROLLS = {
     3: 1,
     4: 3,
@@ -41,8 +44,11 @@ ROLLS = {
     9: 1,
 }
 
+
 @lru_cache
-def play_all_games(p1_pos: int, p2_pos: int, p1_score: int, p2_score: int) -> Tuple[int, int]:
+def play_all_games(
+    p1_pos: int, p2_pos: int, p1_score: int, p2_score: int
+) -> Tuple[int, int]:
     if p1_score >= 21:
         return 1, 0
     if p2_score >= 21:
@@ -59,31 +65,38 @@ def play_all_games(p1_pos: int, p2_pos: int, p1_score: int, p2_score: int) -> Tu
         for p2_roll, p2_rollqty in ROLLS.items():
             p2_newpos = (p2_pos + p2_roll) % 10
             p1_won, p2_won = play_all_games(
-                p1_newpos,
-                p2_newpos,
-                p1_newscore,
-                p2_score + p2_newpos + 1
+                p1_newpos, p2_newpos, p1_newscore, p2_score + p2_newpos + 1
             )
-            p1_wins += (p1_won * p1_rollqty * p2_rollqty)
-            p2_wins += (p2_won * p1_rollqty * p2_rollqty)
+            p1_wins += p1_won * p1_rollqty * p2_rollqty
+            p2_wins += p2_won * p1_rollqty * p2_rollqty
 
     return p1_wins, p2_wins
+
 
 def test_part1() -> None:
     """
     Examples for Part 1.
     """
-    assert read_starting_positions('\n'.join((
-        'Player 1 starting position: 4',
-        'Player 2 starting position: 8',
-    ))) == (3, 7)
+    assert (
+        read_starting_positions(
+            "\n".join(
+                (
+                    "Player 1 starting position: 4",
+                    "Player 2 starting position: 8",
+                )
+            )
+        )
+        == (3, 7)
+    )
     assert play_deterministic_game(3, 7) == (1000, 745, 993)
+
 
 def test_part2() -> None:
     """
     Examples for Part 2.
     """
     assert play_all_games(3, 7, 0, 0) == (444356092776315, 341960390180808)
+
 
 def main() -> None:
     """
@@ -94,11 +107,12 @@ def main() -> None:
 
     p1_score, p2_score, rolls = play_deterministic_game(p1_pos, p2_pos)
     part1 = min(p1_score, p2_score) * rolls
-    print(f'Part 1: {part1}')
+    print(f"Part 1: {part1}")
 
     p1_wins, p2_wins = play_all_games(p1_pos, p2_pos, 0, 0)
     part2 = max(p1_wins, p2_wins)
-    print(f'Part 2: {part2}')
+    print(f"Part 2: {part2}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -5,17 +5,19 @@ https://adventofcode.com/2016/day/3
 
 from typing import Iterable, Tuple
 import numpy as np
-import aocd # type: ignore
+import aocd  # type: ignore
 
 Triangle = Tuple[int, int, int]
+
 
 def read_data(text: str) -> np.ndarray:
     """
     Read data from the puzzle input into a 2d array.
     """
-    return np.array([
-        [int(value) for value in line.split()] for line in text.split('\n')
-    ], int)
+    return np.array(
+        [[int(value) for value in line.split()] for line in text.split("\n")], int
+    )
+
 
 def is_valid_triangle(triangle: Triangle) -> bool:
     """
@@ -23,7 +25,12 @@ def is_valid_triangle(triangle: Triangle) -> bool:
     two summed.
     """
     side_a, side_b, side_c = triangle
-    return (side_a + side_b) > side_c and (side_a + side_c) > side_b and (side_b + side_c) > side_a
+    return (
+        (side_a + side_b) > side_c
+        and (side_a + side_c) > side_b
+        and (side_b + side_c) > side_a
+    )
+
 
 def triangles_vertically(triangles: np.ndarray) -> Iterable[Triangle]:
     """
@@ -32,8 +39,9 @@ def triangles_vertically(triangles: np.ndarray) -> Iterable[Triangle]:
     """
     rotated = np.rot90(triangles)
     for row in rotated:
-        for tri in range(len(row)//3):
-            yield row[(tri*3):(tri*3)+3]
+        for tri in range(len(row) // 3):
+            yield row[(tri * 3) : (tri * 3) + 3]
+
 
 def main() -> None:
     """
@@ -43,10 +51,13 @@ def main() -> None:
     triangles = read_data(data)
 
     valid_p1 = sum(1 for tri in triangles if is_valid_triangle(tri))
-    print(f'Part 1: {valid_p1}')
+    print(f"Part 1: {valid_p1}")
 
-    valid_p2 = sum(1 for tri in triangles_vertically(triangles) if is_valid_triangle(tri))
-    print(f'Part 2: {valid_p2}')
+    valid_p2 = sum(
+        1 for tri in triangles_vertically(triangles) if is_valid_triangle(tri)
+    )
+    print(f"Part 2: {valid_p2}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

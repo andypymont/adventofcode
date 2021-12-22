@@ -143,10 +143,11 @@ from typing import Iterator, Optional
 # is below. After seeing the description for part 2, I changed this from *return* to *yield* in
 # order to be able to capture both the first and last value.
 
+
 def activation_system() -> Iterator[int]:
     b = 0
     while True:
-        a = b|65536
+        a = b | 65536
         b = 7571367
 
         while True:
@@ -155,6 +156,7 @@ def activation_system() -> Iterator[int]:
                 yield b
                 break
             a = a // 256
+
 
 def last_solution() -> Optional[int]:
     solutions = set()
@@ -169,12 +171,14 @@ def last_solution() -> Optional[int]:
 
     return None
 
+
 def main() -> None:
     """
     Calculate and output the solutions based on the real puzzle input.
     """
-    print(f'Part 1: {next(activation_system())}')
-    print(f'Part 2: {last_solution()}')
+    print(f"Part 1: {next(activation_system())}")
+    print(f"Part 2: {last_solution()}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

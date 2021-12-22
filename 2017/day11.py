@@ -5,7 +5,8 @@ https://adventofcode.com/2017/day/11
 
 from dataclasses import dataclass
 from typing import Dict, Iterator, Sequence
-import aocd # type: ignore
+import aocd  # type: ignore
+
 
 @dataclass(frozen=True)
 class Point:
@@ -20,17 +21,19 @@ class Point:
     def distance(self) -> int:
         return (abs(self.x_coord) + abs(self.y_coord) + abs(self.z_coord)) // 2
 
-    def __add__(self, other: 'Point') -> 'Point':
+    def __add__(self, other: "Point") -> "Point":
         return Point(self.x_coord + other.x_coord, self.y_coord + other.y_coord)
 
+
 DIRECTIONS: Dict[str, Point] = {
-    'n': Point(x_coord=0, y_coord=1),
-    'ne': Point(x_coord=1, y_coord=0),
-    'se': Point(x_coord=1, y_coord=-1),
-    's': Point(x_coord=0, y_coord=-1),
-    'sw': Point(x_coord=-1, y_coord=0),
-    'nw': Point(x_coord=-1, y_coord=1),
+    "n": Point(x_coord=0, y_coord=1),
+    "ne": Point(x_coord=1, y_coord=0),
+    "se": Point(x_coord=1, y_coord=-1),
+    "s": Point(x_coord=0, y_coord=-1),
+    "sw": Point(x_coord=-1, y_coord=0),
+    "nw": Point(x_coord=-1, y_coord=1),
 }
+
 
 def distances_on_journey(steps: Sequence[str]) -> Iterator[int]:
     pos = Point(0, 0)
@@ -38,17 +41,19 @@ def distances_on_journey(steps: Sequence[str]) -> Iterator[int]:
         pos += DIRECTIONS[step]
         yield pos.distance
 
+
 def main() -> None:
     """
     Calculate and output the solutions based on the real puzzle input.
     """
     data = aocd.get_data(year=2017, day=11)
 
-    steps = data.split(',')
+    steps = data.split(",")
     distances = list(distances_on_journey(steps))
 
-    print(f'Part 1: {distances[-1]}')
-    print(f'Part 2: {max(distances)}')
+    print(f"Part 1: {distances[-1]}")
+    print(f"Part 2: {max(distances)}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

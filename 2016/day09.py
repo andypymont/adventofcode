@@ -3,7 +3,8 @@
 https://adventofcode.com/2016/day/9
 """
 
-import aocd # type: ignore
+import aocd  # type: ignore
+
 
 def decompressed_len(text: str, nested_tags: bool = False) -> int:
     """
@@ -15,15 +16,15 @@ def decompressed_len(text: str, nested_tags: bool = False) -> int:
     while pos < len(text):
         if capture > 0 and not nested_tags:
             capture -= 1
-        elif text[pos] == '(':
-            in_tag, tag = True, ''
+        elif text[pos] == "(":
+            in_tag, tag = True, ""
 
         if in_tag:
             lengths[pos] = 0
             tag += text[pos]
-            if text[pos] == ')':
+            if text[pos] == ")":
                 in_tag = False
-                capture, repeat = [int(x) for x in tag[1:-1].lower().split('x')]
+                capture, repeat = [int(x) for x in tag[1:-1].lower().split("x")]
                 for offset in range(capture):
                     lengths[pos + 1 + offset] *= repeat
 
@@ -31,14 +32,16 @@ def decompressed_len(text: str, nested_tags: bool = False) -> int:
 
     return sum(lengths)
 
+
 def main() -> None:
     """
     Calculate and output the solutions based on the real puzzle input.
     """
     data = aocd.get_data(year=2016, day=9)
 
-    print(f'Part 1: {decompressed_len(data)}')
-    print(f'Part 2: {decompressed_len(data, nested_tags=True)}')
+    print(f"Part 1: {decompressed_len(data)}")
+    print(f"Part 2: {decompressed_len(data, nested_tags=True)}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

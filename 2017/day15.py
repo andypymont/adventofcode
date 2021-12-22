@@ -5,17 +5,17 @@ https://adventofcode.com/2017/day/15
 
 from collections import deque
 from typing import Dict, Sequence
-import aocd # type: ignore
-import regex as re # type: ignore
+import aocd  # type: ignore
+import regex as re  # type: ignore
+
 
 class Judge:
-
     def __init__(self, comparisons: int):
         self.comparisons = comparisons
         self.count = 0
         self.queues: Dict[str, deque] = {
-            'A': deque(),
-            'B': deque(),
+            "A": deque(),
+            "B": deque(),
         }
 
     @property
@@ -23,9 +23,9 @@ class Judge:
         return self.comparisons <= 0
 
     def check(self) -> None:
-        while len(self.queues['A']) > 0 and len(self.queues['B']) > 0:
-            first = self.queues['A'].popleft()
-            second = self.queues['B'].popleft()
+        while len(self.queues["A"]) > 0 and len(self.queues["B"]) > 0:
+            first = self.queues["A"].popleft()
+            second = self.queues["B"].popleft()
             self.comparisons -= 1
             if first == second:
                 self.count += 1
@@ -35,19 +35,21 @@ class Judge:
             self.queues.get(source, deque()).append(hex_number)
             self.check()
 
-class Generator:
 
-    def __init__(self, name: str, start_value: int, judge: Judge, filtered_judge: Judge):
+class Generator:
+    def __init__(
+        self, name: str, start_value: int, judge: Judge, filtered_judge: Judge
+    ):
         self.name = name
         self.value = start_value
-        self.factor = 16807 if name == 'A' else 48271
-        self.check = 4 if name == 'A' else 8
+        self.factor = 16807 if name == "A" else 48271
+        self.check = 4 if name == "A" else 8
         self.judge = judge
         self.filtered_judge = filtered_judge
 
     @staticmethod
     def hexstart(number: int) -> str:
-        return f'{number:{0}16b}'[-16:]
+        return f"{number:{0}16b}"[-16:]
 
     def run(self) -> None:
         hex_value = self.hexstart(self.value)
@@ -58,9 +60,13 @@ class Generator:
 
         self.value = (self.value * self.factor) % 2147483647
 
-RE_GENERATORS = re.compile(r'Generator (\w) starts with (\d+)')
+
+RE_GENERATORS = re.compile(r"Generator (\w) starts with (\d+)")
+
+
 def read_start_values(text: str) -> Dict[str, int]:
     return {name: int(val) for name, val in RE_GENERATORS.findall(text)}
+
 
 def run_full_check(start_values: Dict[str, int]) -> Sequence[int]:
     judges = (
@@ -68,8 +74,8 @@ def run_full_check(start_values: Dict[str, int]) -> Sequence[int]:
         Judge(5_000_000),
     )
     generators = (
-        Generator('A', start_values['A'], *judges),
-        Generator('B', start_values['B'], *judges),
+        Generator("A", start_values["A"], *judges),
+        Generator("B", start_values["B"], *judges),
     )
 
     while not all(judge.completed for judge in judges):
@@ -77,6 +83,7 @@ def run_full_check(start_values: Dict[str, int]) -> Sequence[int]:
             gen.run()
 
     return tuple(judge.count for judge in judges)
+
 
 def main() -> None:
     """
@@ -86,8 +93,9 @@ def main() -> None:
     values = read_start_values(data)
 
     part1, part2 = run_full_check(values)
-    print(f'Part 1: {part1}')
-    print(f'Part 2: {part2}')
+    print(f"Part 1: {part1}")
+    print(f"Part 2: {part2}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

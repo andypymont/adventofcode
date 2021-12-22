@@ -5,10 +5,10 @@ https://adventofcode.com/2020/day/15
 
 from collections import deque
 from typing import Dict, Iterable, Optional
-import aocd # type: ignore
+import aocd  # type: ignore
 
-class ElfMemoryGame():
 
+class ElfMemoryGame:
     def __init__(self, starting_numbers: Iterable[int]):
         self.appearances: Dict[int, deque[int]] = {}
         self.length = 0
@@ -35,18 +35,20 @@ class ElfMemoryGame():
         self.length += 1
         self.latest = number
 
+
 def main() -> None:
     """
     Calculate and output the solutions based on the real puzzle input.
     """
     data = aocd.get_data(year=2020, day=15)
 
-    emg = ElfMemoryGame(map(int, data.split(',')))
+    emg = ElfMemoryGame(map(int, data.split(",")))
     emg.extend(2020)
-    print(f'Part 1: {emg.latest}')
+    print(f"Part 1: {emg.latest}")
 
     emg.extend(30_000_000)
-    print(f'Part 2: {emg.latest}')
+    print(f"Part 2: {emg.latest}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

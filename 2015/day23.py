@@ -5,13 +5,15 @@ https://adventofcode.com/2015/day/23
 
 from dataclasses import dataclass
 from typing import Dict, Sequence, Tuple
-import aocd # type: ignore
+import aocd  # type: ignore
+
 
 @dataclass
 class Memory:
     """
     Program memory, containing the register-value mapping and in the instruction pointer.
     """
+
     registers: Dict[str, int]
     pointer: int
 
@@ -69,13 +71,16 @@ class Memory:
         else:
             self.pointer += 1
 
+
 ProgramLine = Tuple[str, Sequence[str]]
+
 
 @dataclass
 class Program:
     """
     A program, managing the list of lines from the program input and also its memory state.
     """
+
     lines: Sequence[ProgramLine]
     memory: Memory
 
@@ -89,7 +94,7 @@ class Program:
         Read and break down a single line from the puzzle input.
         """
         command = line[:3]
-        args = line[4:].split(', ')
+        args = line[4:].split(", ")
         return (command, args)
 
     @classmethod
@@ -97,14 +102,14 @@ class Program:
         """
         Parse all lines from the puzzle input.
         """
-        return [cls.parse_line_from_input(line) for line in text.split('\n')]
+        return [cls.parse_line_from_input(line) for line in text.split("\n")]
 
     @property
     def result(self) -> int:
         """
         Return the program result, i.e. the value in register "b".
         """
-        return self.memory.get('b')
+        return self.memory.get("b")
 
     def run(self) -> int:
         """
@@ -114,20 +119,21 @@ class Program:
         while 0 <= self.memory.pointer < len(self.lines):
             command, args = self.lines[self.memory.pointer]
 
-            if command == 'hlf':
+            if command == "hlf":
                 self.memory.hlf(args[0])
-            elif command == 'tpl':
+            elif command == "tpl":
                 self.memory.tpl(args[0])
-            elif command == 'inc':
+            elif command == "inc":
                 self.memory.inc(args[0])
-            elif command == 'jmp':
+            elif command == "jmp":
                 self.memory.jmp(int(args[0]))
-            elif command == 'jie':
+            elif command == "jie":
                 self.memory.jie(args[0], int(args[1]))
-            elif command == 'jio':
+            elif command == "jio":
                 self.memory.jio(args[0], int(args[1]))
 
         return self.result
+
 
 def main():
     """
@@ -136,10 +142,11 @@ def main():
     data = aocd.get_data(year=2015, day=23)
 
     first = Program(data, {})
-    print(f'Part 1: {first.run()}')
+    print(f"Part 1: {first.run()}")
 
-    second = Program(data, {'a': 1})
-    print(f'Part 1: {second.run()}')
+    second = Program(data, {"a": 1})
+    print(f"Part 1: {second.run()}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
