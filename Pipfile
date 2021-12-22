@@ -7,7 +7,6 @@ verify_ssl = true
 
 [packages]
 advent-of-code-data = "*"
-jupyter = "*"
 notebook = "*"
 numpy = "*"
 pandas = "*"
@@ -16,6 +15,10 @@ z3-solver = "*"
 mypy = "*"
 pylint = "*"
 pytest = "*"
+black = "*"
 
 [requires]
 python_version = "3.9"
+
+[pipenv]
+allow_prereleases = true
