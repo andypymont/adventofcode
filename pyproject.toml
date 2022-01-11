@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "adventofcode"
+version = "0.1.0"
+description = "My Advent of Code solutions"
+authors = ["Andy Pymont <andypymont@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+advent-of-code-data = "^1.1.1"
+numpy = "^1.22.0"
+pandas = "^1.3.5"
+regex = "^2021.11.10"
+z3-solver = "^4.8.14"
+
+[tool.poetry.dev-dependencies]
+black = "^21.12b0"
+mypy = "^0.931"
+pylint = "^2.12.2"
+pytest = "^6.2.5"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
