@@ -49,10 +49,10 @@ class Maze:
         """
         Convert a key character into an int so it can be used in binary operations.
         """
-        return 2 ** (ord(char.lower()) - 97)
+        return int(2 ** (ord(char.lower()) - 97))
 
     @classmethod
-    def from_text(cls, text: str) -> "Maze":
+    def from_text(cls, text: str, multi_bots: bool = False) -> "Maze":
         """
         Create a Maze object from the puzzle input text.
         """
@@ -71,7 +71,16 @@ class Maze:
                 elif char in ascii_uppercase:
                     doors[cls.key_number(char)] = pos
                 elif char == "@":
-                    robots[0 - len(robots)] = pos
+                    if multi_bots:
+                        robots[0] = pos + complex(-1, -1)
+                        robots[-1] = pos + complex(1, -1)
+                        robots[-2] = pos + complex(-1, 1)
+                        robots[-3] = pos + complex(1, 1)
+                        walls.add(pos)
+                        for extra_wall in neighbours(pos):
+                            walls.add(extra_wall)
+                    else:
+                        robots[0] = pos
 
         return cls(walls, keys, doors, robots)
 
@@ -303,27 +312,28 @@ def test_part1() -> None:
     )
     assert shortest_path(eg2) == 86
 
-    eg3 = Maze.from_text(
-        "\n".join(
-            (
-                "#######",
-                "#a.#Cd#",
-                "##...##",
-                "##.@.##",
-                "##...##",
-                "#cB#Ab#",
-                "#######",
-            )
+
+def test_part2() -> None:
+    """
+    Examples for Part 2.
+    """
+    maze3 = "\n".join(
+        (
+            "#######",
+            "#a.#Cd#",
+            "##...##",
+            "##.@.##",
+            "##...##",
+            "#cB#Ab#",
+            "#######",
         )
-    ).to_graph()
+    )
+
+    eg3 = Maze.from_text(maze3).to_graph()
     assert shortest_path(eg3) == 26
 
-
-# def test_part2() -> None:
-#     """
-#     Examples for Part 2.
-#     """
-#     assert False
+    eg3_p2 = Maze.from_text(maze3, True).to_graph()
+    assert shortest_path(eg3_p2) == 8
 
 
 def main() -> None:
@@ -333,9 +343,10 @@ def main() -> None:
     data = aocd.get_data(year=2019, day=18)
 
     maze = Maze.from_text(data)
-    graph = maze.to_graph()
-    print(f"Part 1: {shortest_path(graph)}")
-    # print(f'Part 2: {p2}')
+    print(f"Part 1: {shortest_path(maze.to_graph())}")
+
+    maze2 = Maze.from_text(data, True)
+    print(f"Part 2: {shortest_path(maze2.to_graph())}")
 
 
 if __name__ == "__main__":
