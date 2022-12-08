@@ -4,8 +4,6 @@ https://adventofcode.com/2022/day/8
 """
 
 from dataclasses import dataclass
-from functools import reduce
-from operator import or_ as union
 import aocd  # type: ignore
 
 
@@ -28,6 +26,47 @@ LEFT = Point(0, -1)
 RIGHT = Point(0, 1)
 
 
+@dataclass(frozen=True)
+class TreeInfo:
+    """
+    The information about a tree: is it visible from the edge of the forest, and what is its scenic
+    score.
+    """
+
+    visible: bool
+    scenic_score: int
+
+    @classmethod
+    def from_tree(cls, forest: dict[Point, int], tree: Point) -> "TreeInfo":
+        """
+        Return the TreeInfo corresponding to the tree in the given position of the given forest.
+        """
+        visible = False
+        scenic_score = 1
+
+        for direction in (UP, DOWN, LEFT, RIGHT):
+            target = tree
+            distance = 0
+            while True:
+                target += direction
+                if target not in forest:
+                    visible = True
+                    break
+                distance += 1
+                if forest[target] >= forest[tree]:
+                    break
+            scenic_score *= distance
+
+        return cls(visible, scenic_score)
+
+    @classmethod
+    def all_from_forest(cls, forest: dict[Point, int]) -> dict[Point, "TreeInfo"]:
+        """
+        Return the TreeInfo for every tree in the given forest.
+        """
+        return {tree: cls.from_tree(forest, tree) for tree in forest}
+
+
 def read_forest(text: str) -> dict[Point, int]:
     """
     Parse the puzzle input into a dictionary mapping locations to the tree height at the location.
@@ -37,64 +76,6 @@ def read_forest(text: str) -> dict[Point, int]:
         for y, line in enumerate(text.split("\n"))
         for x, char in enumerate(line)
     }
-
-
-def trees_visible_from(
-    forest: dict[Point, int], tree: Point, direction: Point
-) -> set[Point]:
-    """
-    Look from one tree on the edge of the forest toward the opposite edge and return a set of all
-    visible trees.
-
-    A tree is visible if all of the other trees between it and an edge of the forest are shorter
-    than it.
-    """
-    visible = set()
-    max_height = -1
-
-    while tree in forest:
-        height = forest[tree]
-        if height > max_height:
-            max_height = height
-            visible.add(tree)
-        tree += direction
-
-    return visible
-
-
-def visible_trees_in_forest(forest: dict[Point, int]) -> set[Point]:
-    """
-    Return the set of all visible trees looking from all edges of the given forest.
-    """
-    x_values = {pt.x_coord for pt in forest.keys()}
-    y_values = {pt.y_coord for pt in forest.keys()}
-
-    return reduce(
-        union,
-        (
-            reduce(
-                union, (trees_visible_from(forest, Point(0, x), DOWN) for x in x_values)
-            ),
-            reduce(
-                union,
-                (
-                    trees_visible_from(forest, Point(max(y_values), x), UP)
-                    for x in x_values
-                ),
-            ),
-            reduce(
-                union,
-                (trees_visible_from(forest, Point(y, 0), RIGHT) for y in y_values),
-            ),
-            reduce(
-                union,
-                (
-                    trees_visible_from(forest, Point(y, max(x_values)), LEFT)
-                    for y in y_values
-                ),
-            ),
-        ),
-    )
 
 
 def test_part1() -> None:
@@ -138,15 +119,53 @@ def test_part1() -> None:
         Point(4, 4): 0,
     }
     assert read_forest(example) == forest
-    assert trees_visible_from(forest, Point(0, 0), RIGHT) == {Point(0, 0), Point(0, 3)}
-    assert len(visible_trees_in_forest(forest)) == 21
+
+    assert TreeInfo.from_tree(forest, Point(1, 1)).visible
+    assert TreeInfo.from_tree(forest, Point(1, 2)).visible
+    assert not TreeInfo.from_tree(forest, Point(1, 3)).visible
+    assert not TreeInfo.from_tree(forest, Point(2, 2)).visible
+
+    tree_info = TreeInfo.all_from_forest(forest)
+    assert sum(1 for tree in tree_info.values() if tree.visible) == 21
 
 
-# def test_part2() -> None:
-#     """
-#     Examples for Part 2.
-#     """
-#     assert False
+def test_part2() -> None:
+    """
+    Examples for Part 2.
+    """
+    forest = {
+        Point(0, 0): 3,
+        Point(0, 1): 0,
+        Point(0, 2): 3,
+        Point(0, 3): 7,
+        Point(0, 4): 3,
+        Point(1, 0): 2,
+        Point(1, 1): 5,
+        Point(1, 2): 5,
+        Point(1, 3): 1,
+        Point(1, 4): 2,
+        Point(2, 0): 6,
+        Point(2, 1): 5,
+        Point(2, 2): 3,
+        Point(2, 3): 3,
+        Point(2, 4): 2,
+        Point(3, 0): 3,
+        Point(3, 1): 3,
+        Point(3, 2): 5,
+        Point(3, 3): 4,
+        Point(3, 4): 9,
+        Point(4, 0): 3,
+        Point(4, 1): 5,
+        Point(4, 2): 3,
+        Point(4, 3): 9,
+        Point(4, 4): 0,
+    }
+
+    assert TreeInfo.from_tree(forest, Point(1, 2)) == TreeInfo(True, 4)
+    assert TreeInfo.from_tree(forest, Point(3, 2)) == TreeInfo(True, 8)
+
+    info = TreeInfo.all_from_forest(forest)
+    assert max(tree.scenic_score for tree in info.values()) == 8
 
 
 def main() -> None:
@@ -154,10 +173,12 @@ def main() -> None:
     Calculate and output the solutions based on the real puzzle input.
     """
     data = aocd.get_data(year=2022, day=8)
-    forest = read_forest(data)
 
-    print(f"Part 1: {len(visible_trees_in_forest(forest))}")
-    # print(f'Part 2: {p2}')
+    forest = read_forest(data)
+    info = TreeInfo.all_from_forest(forest)
+
+    print(f"Part 1: {sum(1 for tree in info.values() if tree.visible)}")
+    print(f"Part 2: {max(tree.scenic_score for tree in info.values())}")
 
 
 if __name__ == "__main__":
