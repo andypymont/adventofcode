@@ -86,19 +86,34 @@ def read_moves(text: str) -> tuple[tuple[Direction, int], ...]:
 @dataclass(frozen=True, order=True)
 class Rope:
     """
-    A rope, consisting of the position of its head and tail (which may overlap) in 2d space.
+    A rope, consisting of the position of its knots (which may overlap) in 2d space.
     """
-    head: Point
-    tail: Point
+
+    knots: tuple[Point, ...]
+
+    @property
+    def tail(self) -> "Point":
+        """
+        Return the tail (final knot) of this Rope.
+        """
+        return self.knots[-1]
 
     def step(self, direction: Direction) -> "Rope":
         """
         Return the state reached by moving the head of the rope one step in the given direction,
         with the tail following as needed.
         """
-        head = self.head + direction.value
-        tail = self.tail + self.tail.toward(head)
-        return Rope(head, self.tail if tail == head else tail)
+        moved = list(self.knots)
+
+        for pos, knot in enumerate(self.knots):
+            if pos == 0:
+                moved[pos] = knot + direction.value
+            else:
+                prev = moved[pos - 1]
+                step = knot + knot.toward(prev)
+                moved[pos] = knot if step == prev else step
+
+        return Rope(tuple(moved))
 
     def move(self, direction: Direction, steps: int) -> Iterator["Rope"]:
         """
@@ -111,13 +126,16 @@ class Rope:
             yield rope
 
 
-def positions_visited_by_tail(moves: tuple[tuple[Direction, int], ...]) -> int:
+def positions_visited_by_tail(
+    knot_count: int, moves: tuple[tuple[Direction, int], ...]
+) -> int:
     """
-    Simulate the movement of the rope from an initial position with head and tail both at the same
-    point, and return the number of distinct locations visited by the tail.
+    Simulate the movement of the rope of the given knot-count from an initial position with all
+    knots located at the same point, and return the number of distinct locations visited by the
+    tail.
     """
     origin = Point(0, 0)
-    rope = Rope(origin, origin)
+    rope = Rope((origin,) * knot_count)
     visited = {origin}
 
     for direction, steps in moves:
@@ -136,28 +154,28 @@ def test_part1() -> None:
     assert Point(2, 2).toward(Point(2, 4)) == Point(0, 1)
     assert Point(4, 7).toward(Point(8, 11)) == Point(1, 1)
 
-    assert Rope(Point(0, 0), Point(0, 0)).step(Direction.RIGHT) == Rope(
-        Point(0, 1), Point(0, 0)
+    assert Rope((Point(0, 0), Point(0, 0))).step(Direction.RIGHT) == Rope(
+        (Point(0, 1), Point(0, 0))
     )
-    assert Rope(Point(0, 1), Point(0, 0)).step(Direction.RIGHT) == Rope(
-        Point(0, 2), Point(0, 1)
+    assert Rope((Point(0, 1), Point(0, 0))).step(Direction.RIGHT) == Rope(
+        (Point(0, 2), Point(0, 1))
     )
 
-    assert set(Rope(Point(0, 0), Point(0, 0)).move(Direction.RIGHT, 4)) == {
-        Rope(Point(0, 1), Point(0, 0)),
-        Rope(Point(0, 2), Point(0, 1)),
-        Rope(Point(0, 3), Point(0, 2)),
-        Rope(Point(0, 4), Point(0, 3)),
+    assert set(Rope((Point(0, 0), Point(0, 0))).move(Direction.RIGHT, 4)) == {
+        Rope(((Point(0, 1), Point(0, 0)))),
+        Rope(((Point(0, 2), Point(0, 1)))),
+        Rope(((Point(0, 3), Point(0, 2)))),
+        Rope(((Point(0, 4), Point(0, 3)))),
     }
 
-    assert Rope(Point(0, 4), Point(0, 3)).step(Direction.UP) == Rope(
-        Point(-1, 4), Point(0, 3)
+    assert Rope((Point(0, 4), Point(0, 3))).step(Direction.UP) == Rope(
+        (Point(-1, 4), Point(0, 3))
     )
-    assert set(Rope(Point(0, 4), Point(0, 3)).move(Direction.UP, 4)) == {
-        Rope(Point(-1, 4), Point(0, 3)),
-        Rope(Point(-2, 4), Point(-1, 4)),
-        Rope(Point(-3, 4), Point(-2, 4)),
-        Rope(Point(-4, 4), Point(-3, 4)),
+    assert set(Rope((Point(0, 4), Point(0, 3))).move(Direction.UP, 4)) == {
+        Rope((Point(-1, 4), Point(0, 3))),
+        Rope((Point(-2, 4), Point(-1, 4))),
+        Rope((Point(-3, 4), Point(-2, 4))),
+        Rope((Point(-4, 4), Point(-3, 4))),
     }
 
     example = (
@@ -188,14 +206,36 @@ def test_part1() -> None:
         == example
     )
 
-    assert positions_visited_by_tail(example) == 13
+    assert positions_visited_by_tail(2, example) == 13
 
 
-# def test_part2() -> None:
-#     """
-#     Examples for Part 2.
-#     """
-#     assert False
+def test_part2() -> None:
+    """
+    Examples for Part 2.
+    """
+    example = (
+        (Direction.RIGHT, 4),
+        (Direction.UP, 4),
+        (Direction.LEFT, 3),
+        (Direction.DOWN, 1),
+        (Direction.RIGHT, 4),
+        (Direction.DOWN, 1),
+        (Direction.LEFT, 5),
+        (Direction.RIGHT, 2),
+    )
+    assert positions_visited_by_tail(10, example) == 1
+
+    example_two = (
+        (Direction.RIGHT, 5),
+        (Direction.UP, 8),
+        (Direction.LEFT, 8),
+        (Direction.DOWN, 3),
+        (Direction.RIGHT, 17),
+        (Direction.DOWN, 10),
+        (Direction.LEFT, 25),
+        (Direction.UP, 20),
+    )
+    assert positions_visited_by_tail(10, example_two) == 36
 
 
 def main() -> None:
@@ -205,9 +245,8 @@ def main() -> None:
     data = aocd.get_data(year=2022, day=9)
     moves = read_moves(data)
 
-    part_one = positions_visited_by_tail(moves)
-    print(f"Part 1: {part_one}")
-    # print(f'Part 2: {part_two}')
+    print(f"Part 1: {positions_visited_by_tail(2, moves)}")
+    print(f"Part 2: {positions_visited_by_tail(10, moves)}")
 
 
 if __name__ == "__main__":
