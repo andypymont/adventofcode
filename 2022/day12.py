@@ -49,23 +49,27 @@ class HeightMap:
 
     def reachable_neighbours(self, point: complex) -> set[complex]:
         """
-        Return all of the (orthogonal) reachable neighbours of the given point, i.e. those no more
-        than one level higher.
+        Return all of the (orthogonal) reachable neighbours of the given point when tracing paths
+        in REVERSE, i.e. those no more than one level lower.
         """
-        height_limit = self.heights[point] + 1
+        height_limit = self.heights[point] - 1
         return set(
             neighbour
             for neighbour in (point + direction for direction in COMPASS)
-            if self.heights.get(neighbour, 30) <= height_limit
+            if self.heights.get(neighbour, -2) >= height_limit
         )
 
-    def shortest_path(self) -> int:
+    def shortest_paths(self) -> tuple[int, int]:
         """
-        Calculate the shortest path from the start to the goal point and return the number of steps
-        taken.
+        Tracing from the destination, work down the mountain, finding and returning two values: the
+        shortest path from the start to the goal point, and the shortest hiking trail, i.e. a route
+        from height 0 to the summit.
+
+        If either path cannot be found, return -1 instead.
         """
         visited: set[complex] = set()
-        consider = deque([(self.start, 0)])
+        consider = deque([(self.goal, 0)])
+        hiking = -1
 
         while consider:
             point, steps = consider.popleft()
@@ -73,18 +77,21 @@ class HeightMap:
             if point in visited:
                 continue
 
-            if point == self.goal:
-                return steps
+            if hiking == -1 and self.heights[point] == 0:
+                hiking = steps
+
+            if point == self.start:
+                return (steps, hiking)
 
             visited.add(point)
 
             for neighbour in self.reachable_neighbours(point):
                 consider.append((neighbour, steps + 1))
 
-        raise ValueError("No valid route found")
+        return (-1, hiking)
 
 
-def test_part1() -> None:
+def test_parts_1_and_2() -> None:
     """
     Examples for Part 1.
     """
@@ -117,21 +124,15 @@ def test_part1() -> None:
     }
     assert height_map.reachable_neighbours(complex(0, 5)) == {
         complex(0, 4),
+        complex(1, 5),
         complex(0, 6),
     }
     assert height_map.reachable_neighbours(complex(3, 4)) == {
+        complex(2, 4),
         complex(3, 5),
-        complex(4, 4),
         complex(3, 3),
     }
-    assert height_map.shortest_path() == 31
-
-
-# def test_part2() -> None:
-#     """
-#     Examples for Part 2.
-#     """
-#     assert False
+    assert height_map.shortest_paths() == (31, 29)
 
 
 def main() -> None:
@@ -141,8 +142,9 @@ def main() -> None:
     data = aocd.get_data(year=2022, day=12)
     height_map = HeightMap.from_input(data)
 
-    print(f"Part 1: {height_map.shortest_path()}")
-    # print(f'Part 2: {p2}')
+    part_one, part_two = height_map.shortest_paths()
+    print(f"Part 1: {part_one}")
+    print(f"Part 2: {part_two}")
 
 
 if __name__ == "__main__":
