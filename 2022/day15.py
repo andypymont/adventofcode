@@ -111,6 +111,54 @@ def count_non_beacon_locations_in_row(sensors: Sequence[Sensor], row: int) -> in
     return count - len(beacons_in_row)
 
 
+def find_potential_beacon_location(
+    sensors: Sequence[Sensor], min_coord: int = 0, max_coord: int = 4_000_000
+) -> Point:
+    """
+    Given the provided set of sensors, scan for a gap where the beacon could be located, within the
+    square with a top-left corner at (min_coord, min_coord) and a bottom-right corner at
+    (max_coord, max_coord).
+    """
+    for y_coord in range(max_coord, min_coord - 1, -1):
+        x_ranges = sorted(
+            (sensor.covered_range_for_row(y_coord) for sensor in sensors),
+            key=lambda r: (r.start, r.stop),
+        )
+        x_pos = min_coord
+
+        for rng in x_ranges:
+            # skip ranges that we have already passed (or began beyond)
+            if rng.stop <= x_pos:
+                continue
+
+            # if there is an empty space between the previous x position and this range, we have
+            # found the beacon
+            if rng.start > x_pos:
+                return Point(y_coord, x_pos)
+
+            # move to the end of the range
+            x_pos = rng.stop
+
+            # once we're no longer in the interesting window, skip the rest of this row
+            if x_pos > max_coord:
+                break
+
+    raise ValueError("No valid beacon location found")
+
+
+def tuning_frequency(
+    sensors: Sequence[Sensor], min_coord: int = 0, max_coord: int = 4_000_000
+) -> int:
+    """
+    Given the provided set of sensors, scan for a gap where the beacon could be located, within the
+    square with a top-left corner at (min_coord, min_coord) and a bottom-right corner at
+    (max_coord, max_coord). Return the tuning frequency: the x coordinate multiplied by 4,000,000,
+    added to the y coordinate.
+    """
+    beacon = find_potential_beacon_location(sensors, min_coord, max_coord)
+    return (beacon.x_coord * 4_000_000) + beacon.y_coord
+
+
 def test_part1() -> None:
     """
     Examples for Part 1.
@@ -159,11 +207,28 @@ def test_part1() -> None:
     assert count_non_beacon_locations_in_row(sensors, 10) == 26
 
 
-# def test_part2() -> None:
-#     """
-#     Examples for Part 2.
-#     """
-#     assert False
+def test_part2() -> None:
+    """
+    Examples for Part 2.
+    """
+    sensors = (
+        Sensor(Point(18, 2), Point(15, -2)),
+        Sensor(Point(16, 9), Point(16, 10)),
+        Sensor(Point(2, 13), Point(3, 15)),
+        Sensor(Point(14, 12), Point(16, 10)),
+        Sensor(Point(20, 10), Point(16, 10)),
+        Sensor(Point(17, 14), Point(16, 10)),
+        Sensor(Point(7, 8), Point(10, 2)),
+        Sensor(Point(0, 2), Point(10, 2)),
+        Sensor(Point(11, 0), Point(10, 2)),
+        Sensor(Point(14, 20), Point(17, 25)),
+        Sensor(Point(20, 17), Point(22, 21)),
+        Sensor(Point(7, 16), Point(3, 15)),
+        Sensor(Point(3, 14), Point(3, 15)),
+        Sensor(Point(1, 20), Point(3, 15)),
+    )
+    assert find_potential_beacon_location(sensors, 0, 20) == Point(11, 14)
+    assert tuning_frequency(sensors, 0, 20) == 56_000_011
 
 
 def main() -> None:
@@ -174,7 +239,7 @@ def main() -> None:
     sensors = tuple(Sensor.from_text(line) for line in data.splitlines())
 
     print(f"Part 1: {count_non_beacon_locations_in_row(sensors, 2_000_000)}")
-    # print(f'Part 2: {p2}')
+    print(f"Part 2: {tuning_frequency(sensors)}")
 
 
 if __name__ == "__main__":
