@@ -3,7 +3,7 @@
 https://adventofcode.com/2022/day/16
 """
 
-from collections import deque
+from heapq import heappop, heappush
 from dataclasses import dataclass
 import re
 import aocd  # type: ignore
@@ -49,45 +49,30 @@ class Valve:
         }
 
 
-def shortest_distance_graph(valves: dict[str, Valve]) -> dict[tuple[str, str], int]:
-    """
-    Explore the connections between the given valves and return a dictionary which contains
-    key-value pairs where each key is a pair of locations e.g. ("AA", "DD") and the corresponding
-    value is the shortest distance between them.
-    """
-    graph: dict[tuple[str, str], int] = {}
-
-    for start in valves.keys():
-        visited: set[str] = set()
-        consider = deque([(start, 0)])
-
-        while consider:
-            location, steps = consider.popleft()
-            if location in visited:
-                continue
-            visited.add(location)
-            if location != start:
-                graph[(start, location)] = steps
-            for adjacent in valves[location].tunnels:
-                consider.append((adjacent, steps + 1))
-
-    return graph
-
-
 @dataclass(frozen=True)
 class State:
     """
     A state that can be reached during an attempt to find the solution to the problem: this
-    consists of the current location, time, open valves, and the pressure accumulating each minute.
+    consists of the current location, the currently-open valves, the time in minutes remaining, and
+    the total amount of accrued pressure (including future pressure due between time=0 from valves
+    that are already open).
     """
 
     location: str
-    time: int
     open_valves: frozenset[str]
-    ppm: int
+    time: int
+    pressure: int
+
+    def __lt__(self, other: "State") -> bool:
+        """
+        Compare this State to another. The main intended use case is in a min-heap where highest-
+        pressure State objects should be popped first, therefore this returns True if the other
+        State has a *lower* pressure.
+        """
+        return other.pressure < self.pressure
 
     @classmethod
-    def create_initial(cls, valves: dict[str, Valve]) -> "State":
+    def create_initial(cls, valves: dict[str, Valve], time: int) -> "State":
         """
         Return the initial state for the given set of valves. This will mean being located at at AA
         with no time elapsed. We assume all zero-pressure valves are switched on, to avoid ever
@@ -96,39 +81,58 @@ class State:
         """
         return cls(
             "AA",
-            0,
             frozenset(valve.name for valve in valves.values() if valve.flow_rate == 0),
+            time,
             0,
         )
 
-    def reachable(
-        self, valves: dict[str, Valve], graph: dict[tuple[str, str], int]
-    ) -> set["State"]:
+    def maximum_potential(self, valves: dict[str, Valve]) -> int:
         """
-        Return the set of reachable states for this one, given the known set of valves and the
-        graph of shortest travel distances between them.
+        Calculate the maximum possible potential for this state, if all other valves were instantly
+        opened by a benevolent omnipotent passerby.
+        """
+        extra_pressure = self.time * sum(
+            valve.flow_rate
+            for valve in valves.values()
+            if valve.name not in self.open_valves
+        )
+        return self.pressure + extra_pressure
+
+    def open_valve(self, valve: Valve) -> "State":
+        """
+        Return a modified version of this state after spending one minute opening the given valve.
+        """
+        new_pressure = (self.time - 1) * valve.flow_rate
+        return State(
+            self.location,
+            self.open_valves | {valve.name},
+            self.time - 1,
+            self.pressure + new_pressure,
+        )
+
+    def move(self, location: str) -> "State":
+        """
+        Return a modified version of this state after spending one minute moving to the given
+        location.
+        """
+        return State(location, self.open_valves, self.time - 1, self.pressure)
+
+    def reachable(self, valves: dict[str, Valve]) -> set["State"]:
+        """
+        Return the set of reachable states for this one, given the known set of valves.
 
         This will consist of:
-        - Waiting in the current valve until 30 minutes total have passed
-        - Moving to each non-open valve and opening it
+        - Opening the current value (taking one minute)
+        - Moving to each reachable location from this one (taking one minute)
         """
         reachable: set[State] = set()
 
-        if (minutes := 30 - self.time) > 0:
-            reachable.add(
-                State(self.location, self.time + minutes, self.open_valves, self.ppm)
-            )
+        if self.time > 0:
+            if self.location not in self.open_valves:
+                reachable.add(self.open_valve(valves[self.location]))
 
-        for valve in valves.values():
-            if valve.name not in self.open_valves:
-                reachable.add(
-                    State(
-                        valve.name,
-                        self.time + graph[(self.location, valve.name)] + 1,
-                        self.open_valves | {valve.name},
-                        self.ppm + valve.flow_rate,
-                    )
-                )
+            for neighbour in valves[self.location].tunnels:
+                reachable.add(self.move(neighbour))
 
         return reachable
 
@@ -138,35 +142,35 @@ def most_pressure_possible(valves: dict[str, Valve]) -> int:
     Conduct a search of all possible movements within the given set of valves and return the
     highest possible total pressure that can be generated in 30 minutes.
     """
-    graph = shortest_distance_graph(valves)
-    consider = deque([(State.create_initial(valves), 0)])
+    consider = [State.create_initial(valves, 30)]
+    visited: dict[tuple[str, frozenset[str]], int] = {}
     best_pressure = 0
-    all_open_pressure = sum(valve.flow_rate for valve in valves.values())
 
     while consider:
-        state, pressure = consider.popleft()
+        state = heappop(consider)
 
-        # discard invalid states (i.e. took too long to travel to this valve)
-        if state.time > 30:
+        # update best pressure estimate if this state will end up bettering it
+        if state.pressure > best_pressure:
+            best_pressure = state.pressure
+
+        # stop if we've run out of time
+        if state.time == 0:
             continue
 
-        # if we're at minute 30, either discard or record this solution based on how it compares to
-        # the existing best solution
-        if state.time == 30:
-            if pressure > best_pressure:
-                best_pressure = pressure
+        # discard this state if it can no longer do as well as the best existing solution
+        potential = state.maximum_potential(valves)
+        if potential < best_pressure:
             continue
 
-        # discard this state if it can no longer do as well as our best existing solution
-        max_achievable_pressure = pressure + ((30 - state.time) * all_open_pressure)
-        if max_achievable_pressure < best_pressure:
+        # discard this state if we've been in this location before but with more potential
+        position = (state.location, state.open_valves)
+        if visited.get(position, 0) >= potential:
             continue
+        visited[position] = potential
 
         # consider all other reachable states from this one
-        for next_state in state.reachable(valves, graph):
-            time_elapsed = next_state.time - state.time
-            next_pressure = pressure + (state.ppm * time_elapsed)
-            consider.append((next_state, next_pressure))
+        for next_state in state.reachable(valves):
+            heappush(consider, next_state)
 
     return best_pressure
 
@@ -215,24 +219,117 @@ def test_part1() -> None:
         )
         == valves
     )
-    graph = shortest_distance_graph(valves)
-    assert len(graph) == 90
-    assert graph[("AA", "BB")] == 1
-    assert graph[("AA", "EE")] == 2
-    assert graph[("FF", "AA")] == 3
-    assert graph[("JJ", "BB")] == 3
 
-    one = State("AA", 0, frozenset(("AA", "FF", "GG", "II")), 0)
-    assert State.create_initial(valves) == one
-    assert one.reachable(valves, graph) == {
-        State("AA", 30, frozenset(("AA", "FF", "GG", "II")), 0),
-        State("BB", 2, frozenset(("AA", "BB", "FF", "GG", "II")), 13),
-        State("CC", 3, frozenset(("AA", "CC", "FF", "GG", "II")), 2),
-        State("DD", 2, frozenset(("AA", "DD", "FF", "GG", "II")), 20),
-        State("EE", 3, frozenset(("AA", "EE", "FF", "GG", "II")), 3),
-        State("HH", 6, frozenset(("AA", "FF", "GG", "HH", "II")), 22),
-        State("JJ", 3, frozenset(("AA", "FF", "GG", "II", "JJ")), 21),
+    best_route = (
+        State("AA", frozenset(("AA", "FF", "GG", "II")), 30, 0),
+        State("DD", frozenset(("AA", "FF", "GG", "II")), 29, 0),
+        State("DD", frozenset(("AA", "DD", "FF", "GG", "II")), 28, 560),
+        State("CC", frozenset(("AA", "DD", "FF", "GG", "II")), 27, 560),
+        State("BB", frozenset(("AA", "DD", "FF", "GG", "II")), 26, 560),
+        State("BB", frozenset(("AA", "BB", "DD", "FF", "GG", "II")), 25, 885),
+        State("AA", frozenset(("AA", "BB", "DD", "FF", "GG", "II")), 24, 885),
+        State("II", frozenset(("AA", "BB", "DD", "FF", "GG", "II")), 23, 885),
+        State("JJ", frozenset(("AA", "BB", "DD", "FF", "GG", "II")), 22, 885),
+        State("JJ", frozenset(("AA", "BB", "DD", "FF", "GG", "II", "JJ")), 21, 1326),
+        State("II", frozenset(("AA", "BB", "DD", "FF", "GG", "II", "JJ")), 20, 1326),
+        State("AA", frozenset(("AA", "BB", "DD", "FF", "GG", "II", "JJ")), 19, 1326),
+        State("DD", frozenset(("AA", "BB", "DD", "FF", "GG", "II", "JJ")), 18, 1326),
+        State("EE", frozenset(("AA", "BB", "DD", "FF", "GG", "II", "JJ")), 17, 1326),
+        State("FF", frozenset(("AA", "BB", "DD", "FF", "GG", "II", "JJ")), 16, 1326),
+        State("GG", frozenset(("AA", "BB", "DD", "FF", "GG", "II", "JJ")), 15, 1326),
+        State("HH", frozenset(("AA", "BB", "DD", "FF", "GG", "II", "JJ")), 14, 1326),
+        State(
+            "HH", frozenset(("AA", "BB", "DD", "FF", "GG", "HH", "II", "JJ")), 13, 1612
+        ),
+        State(
+            "GG", frozenset(("AA", "BB", "DD", "FF", "GG", "HH", "II", "JJ")), 12, 1612
+        ),
+        State(
+            "FF", frozenset(("AA", "BB", "DD", "FF", "GG", "HH", "II", "JJ")), 11, 1612
+        ),
+        State(
+            "EE", frozenset(("AA", "BB", "DD", "FF", "GG", "HH", "II", "JJ")), 10, 1612
+        ),
+        State(
+            "EE",
+            frozenset(("AA", "BB", "DD", "EE", "FF", "GG", "HH", "II", "JJ")),
+            9,
+            1639,
+        ),
+        State(
+            "DD",
+            frozenset(("AA", "BB", "DD", "EE", "FF", "GG", "HH", "II", "JJ")),
+            8,
+            1639,
+        ),
+        State(
+            "CC",
+            frozenset(("AA", "BB", "DD", "EE", "FF", "GG", "HH", "II", "JJ")),
+            7,
+            1639,
+        ),
+        State(
+            "CC",
+            frozenset(("AA", "BB", "CC", "DD", "EE", "FF", "GG", "HH", "II", "JJ")),
+            6,
+            1651,
+        ),
+        State(
+            "DD",
+            frozenset(("AA", "BB", "CC", "DD", "EE", "FF", "GG", "HH", "II", "JJ")),
+            5,
+            1651,
+        ),
+        State(
+            "CC",
+            frozenset(("AA", "BB", "CC", "DD", "EE", "FF", "GG", "HH", "II", "JJ")),
+            4,
+            1651,
+        ),
+        State(
+            "DD",
+            frozenset(("AA", "BB", "CC", "DD", "EE", "FF", "GG", "HH", "II", "JJ")),
+            3,
+            1651,
+        ),
+        State(
+            "CC",
+            frozenset(("AA", "BB", "CC", "DD", "EE", "FF", "GG", "HH", "II", "JJ")),
+            2,
+            1651,
+        ),
+        State(
+            "DD",
+            frozenset(("AA", "BB", "CC", "DD", "EE", "FF", "GG", "HH", "II", "JJ")),
+            1,
+            1651,
+        ),
+        State(
+            "CC",
+            frozenset(("AA", "BB", "CC", "DD", "EE", "FF", "GG", "HH", "II", "JJ")),
+            0,
+            1651,
+        ),
+    )
+
+    assert State.create_initial(valves, 30) == best_route[0]
+    assert best_route[0].reachable(valves) == {
+        State("BB", frozenset(("AA", "FF", "GG", "II")), 29, 0),
+        best_route[1],
+        State("II", frozenset(("AA", "FF", "GG", "II")), 29, 0),
     }
+    assert best_route[1].reachable(valves) == {
+        best_route[2],
+        State("AA", frozenset(("AA", "FF", "GG", "II")), 28, 0),
+        State("CC", frozenset(("AA", "FF", "GG", "II")), 28, 0),
+        State("EE", frozenset(("AA", "FF", "GG", "II")), 28, 0),
+    }
+
+    for pos in range(1, 31):
+        assert best_route[pos] in best_route[pos - 1].reachable(valves)
+
+    assert best_route[0].maximum_potential(valves) == 2430
+    assert best_route[27].maximum_potential(valves) == 1651
 
     assert most_pressure_possible(valves) == 1651
 
