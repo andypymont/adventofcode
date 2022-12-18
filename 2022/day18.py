@@ -3,6 +3,7 @@
 https://adventofcode.com/2022/day/18
 """
 
+from collections import deque
 from dataclasses import dataclass
 from typing import Iterator
 import aocd  # type: ignore
@@ -66,6 +67,50 @@ def surface_area(cubes: set[Cube]) -> int:
     return surface
 
 
+def exterior_surface_area(cubes: set[Cube]) -> int:
+    """
+    Calculate the exterior surface area of the structure.
+    """
+    min_x = min(c.x_coord for c in cubes) - 1
+    min_y = min(c.y_coord for c in cubes) - 1
+    min_z = min(c.z_coord for c in cubes) - 1
+    max_x = max(c.x_coord for c in cubes) + 1
+    max_y = max(c.y_coord for c in cubes) + 1
+    max_z = max(c.z_coord for c in cubes) + 1
+
+    start = Cube(min_x, min_y, min_z)
+    surface: set[tuple[Cube, Cube]] = set()
+    visited: set[Cube] = set()
+    consider: deque[tuple[Cube, Cube]] = deque([(start, start)])
+
+    while consider:
+        cube, prev = consider.popleft()
+
+        # if we're in a cube, we have hit it moving from our previous position: record that
+        if cube in cubes:
+            surface.add((cube, prev))
+            continue
+
+        # check if we've been here before and if not, record this position for future checks
+        if cube in visited:
+            continue
+        visited.add(cube)
+
+        # stop if we're too far from the structure
+        if cube.x_coord < start.x_coord or cube.x_coord > max_x:
+            continue
+        if cube.y_coord < start.y_coord or cube.y_coord > max_y:
+            continue
+        if cube.z_coord < start.z_coord or cube.z_coord > max_z:
+            continue
+
+        # now consider next neighbours from here
+        for neighbour in cube.neighbours():
+            consider.append((neighbour, cube))
+
+    return len(surface)
+
+
 def test_part1() -> None:
     """
     Examples for Part 1.
@@ -123,11 +168,26 @@ def test_part1() -> None:
     assert surface_area(cubes) == 64
 
 
-# def test_part2() -> None:
-#     """
-#     Examples for Part 2.
-#     """
-#     assert False
+def test_part2() -> None:
+    """
+    Examples for Part 2.
+    """
+    cubes = {
+        Cube(2, 2, 2),
+        Cube(1, 2, 2),
+        Cube(3, 2, 2),
+        Cube(2, 1, 2),
+        Cube(2, 3, 2),
+        Cube(2, 2, 1),
+        Cube(2, 2, 3),
+        Cube(2, 2, 4),
+        Cube(2, 2, 6),
+        Cube(1, 2, 5),
+        Cube(3, 2, 5),
+        Cube(2, 1, 5),
+        Cube(2, 3, 5),
+    }
+    assert exterior_surface_area(cubes) == 58
 
 
 def main() -> None:
@@ -138,7 +198,7 @@ def main() -> None:
     cubes = Cube.all_from_text(data)
 
     print(f"Part 1: {surface_area(cubes)}")
-    # print(f'Part 2: {p2}')
+    print(f"Part 2: {exterior_surface_area(cubes)}")
 
 
 if __name__ == "__main__":
