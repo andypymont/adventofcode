@@ -5,6 +5,9 @@ https://adventofcode.com/2022/day/16
 
 from collections import deque
 from dataclasses import dataclass
+from functools import cached_property, reduce
+from itertools import combinations
+from operator import and_ as intersection
 import re
 import aocd  # type: ignore
 
@@ -37,138 +40,113 @@ class Valve:
             frozenset(match.groups()[2].split(", ")),
         )
 
-    @classmethod
-    def all_from_text(cls, text: str) -> dict[str, "Valve"]:
-        """
-        Read all Valves from the given puzzle input and return a dictionary mapping valve names to
-        Valve objects.
-        """
-        return {
-            valve.name: valve
-            for valve in (Valve.from_text(line) for line in text.splitlines())
-        }
-
-
-def shortest_distance_graph(valves: dict[str, Valve]) -> dict[tuple[str, str], int]:
-    """
-    Explore the connections between the given valves and return a dictionary which contains
-    key-value pairs where each key is a pair of locations e.g. ("AA", "DD") and the corresponding
-    value is the shortest distance between them.
-    """
-    graph: dict[tuple[str, str], int] = {}
-
-    for start in valves.keys():
-        visited: set[str] = set()
-        consider = deque([(start, 0)])
-
-        while consider:
-            location, steps = consider.popleft()
-            if location in visited:
-                continue
-            visited.add(location)
-            if location != start:
-                graph[(start, location)] = steps
-            for adjacent in valves[location].tunnels:
-                consider.append((adjacent, steps + 1))
-
-    return graph
-
 
 @dataclass(frozen=True)
 class State:
     """
-    A state that can be reached during an attempt to find the solution to the problem: this
-    consists of the current location, time, open valves, and the pressure accumulating each minute.
+    A possible state whilst exploring a system of valves.
     """
 
-    location: str
     time: int
+    location: str
     open_valves: frozenset[str]
-    ppm: int
+    pressure: int
+
+
+@dataclass
+class ValveSystem:
+    """
+    A system of valves and operations for traversing them to solve this day's puzzle.
+    """
+
+    valves: dict[str, Valve]
 
     @classmethod
-    def create_initial(cls, valves: dict[str, Valve]) -> "State":
+    def from_text(cls, text: str) -> "ValveSystem":
         """
-        Return the initial state for the given set of valves. This will mean being located at at AA
-        with no time elapsed. We assume all zero-pressure valves are switched on, to avoid ever
-        bothering to turn them on later and since they will make no difference to the pressure
-        output.
+        Read the system from the puzzle input.
         """
         return cls(
-            "AA",
-            0,
-            frozenset(valve.name for valve in valves.values() if valve.flow_rate == 0),
-            0,
+            {
+                valve.name: valve
+                for valve in (Valve.from_text(line) for line in text.splitlines())
+            }
         )
 
-    def reachable(
-        self, valves: dict[str, Valve], graph: dict[tuple[str, str], int]
-    ) -> set["State"]:
+    @cached_property
+    def graph(self) -> dict[str, dict[str, int]]:
         """
-        Return the set of reachable states for this one, given the known set of valves and the
-        graph of shortest travel distances between them.
-
-        This will consist of:
-        - Waiting in the current valve until 30 minutes total have passed
-        - Moving to each non-open valve and opening it
+        Return the graph of the shortest distances between each set of locations in the system.
+        This in the format of a dictionary of dictionaries, such that an individual shortest
+        distance can be looked up via valve_system.graph[origin][destination].
         """
-        reachable: set[State] = set()
+        graph: dict[str, dict[str, int]] = {}
 
-        if (minutes := 30 - self.time) > 0:
-            reachable.add(
-                State(self.location, self.time + minutes, self.open_valves, self.ppm)
-            )
+        for start in self.valves.keys():
+            distances: dict[str, int] = {}
+            consider = deque([(start, 0)])
 
-        for valve in valves.values():
-            if valve.name not in self.open_valves:
-                reachable.add(
-                    State(
-                        valve.name,
-                        self.time + graph[(self.location, valve.name)] + 1,
-                        self.open_valves | {valve.name},
-                        self.ppm + valve.flow_rate,
-                    )
-                )
+            while consider:
+                location, steps = consider.popleft()
+                if location != start:
+                    distances[location] = steps
+                for adjacent in self.valves[location].tunnels:
+                    if (adjacent != start) and (adjacent not in distances):
+                        consider.append((adjacent, steps + 1))
 
-        return reachable
+            graph[start] = distances
 
+        return graph
 
-def most_pressure_possible(valves: dict[str, Valve]) -> int:
-    """
-    Conduct a search of all possible movements within the given set of valves and return the
-    highest possible total pressure that can be generated in 30 minutes.
-    """
-    graph = shortest_distance_graph(valves)
-    consider = deque([(State.create_initial(valves), 0)])
-    best_pressure = 0
-    all_open_pressure = sum(valve.flow_rate for valve in valves.values())
+    def best_pressure_possibilities(self, time: int) -> dict[frozenset[str], int]:
+        """
+        Explore possible moves within the system and return a mapping of possible sets of turned-on
+        valves to the maximum pressure that can be generated by that set.
+        """
+        results: dict[frozenset[str], int] = {}
+        worthy_valves = set(
+            valve.name for valve in self.valves.values() if valve.flow_rate > 0
+        )
 
-    while consider:
-        state, pressure = consider.popleft()
+        consider = deque([State(time, "AA", frozenset(), 0)])
+        while consider:
+            state = consider.popleft()
 
-        # discard invalid states (i.e. took too long to travel to this valve)
-        if state.time > 30:
-            continue
+            current_best = results.get(state.open_valves, -1)
+            if state.pressure > current_best:
+                results[state.open_valves] = state.pressure
 
-        # if we're at minute 30, either discard or record this solution based on how it compares to
-        # the existing best solution
-        if state.time == 30:
-            if pressure > best_pressure:
-                best_pressure = pressure
-            continue
+            for neighbour, distance in self.graph[state.location].items():
+                if (neighbour not in state.open_valves) and (
+                    neighbour in worthy_valves
+                ):
+                    new_time = state.time - distance - 1
+                    if new_time >= 0:
+                        extra_pressure = self.valves[neighbour].flow_rate * new_time
+                        consider.append(
+                            State(
+                                new_time,
+                                neighbour,
+                                state.open_valves | {neighbour},
+                                state.pressure + extra_pressure,
+                            )
+                        )
 
-        # discard this state if it can no longer do as well as our best existing solution
-        max_achievable_pressure = pressure + ((30 - state.time) * all_open_pressure)
-        if max_achievable_pressure < best_pressure:
-            continue
+        return results
 
-        # consider all other reachable states from this one
-        for next_state in state.reachable(valves, graph):
-            time_elapsed = next_state.time - state.time
-            next_pressure = pressure + (state.ppm * time_elapsed)
-            consider.append((next_state, next_pressure))
-
-    return best_pressure
+    def most_pressure_possible(self, time: int, actors: int) -> int:
+        """
+        Return the maximum amount of pressure that can be generated in this valve system in the
+        given amount of time by the given number of actors.
+        """
+        possible = self.best_pressure_possibilities(time)
+        if actors == 1:
+            return max(possible.values())
+        return max(
+            sum(possible[valve_set] for valve_set in combo)
+            for combo in combinations(possible, actors)
+            if len(reduce(intersection, combo)) == 0
+        )
 
 
 def test_part1() -> None:
@@ -196,52 +174,62 @@ def test_part1() -> None:
         "II": Valve("II", 0, frozenset(("AA", "JJ"))),
         "JJ": Valve("JJ", 21, frozenset(("II",))),
     }
-    assert (
-        Valve.all_from_text(
-            "\n".join(
-                (
-                    "Valve AA has flow rate=0; tunnels lead to valves DD, II, BB",
-                    "Valve BB has flow rate=13; tunnels lead to valves CC, AA",
-                    "Valve CC has flow rate=2; tunnels lead to valves DD, BB",
-                    "Valve DD has flow rate=20; tunnels lead to valves CC, AA, EE",
-                    "Valve EE has flow rate=3; tunnels lead to valves FF, DD",
-                    "Valve FF has flow rate=0; tunnels lead to valves EE, GG",
-                    "Valve GG has flow rate=0; tunnels lead to valves FF, HH",
-                    "Valve HH has flow rate=22; tunnel leads to valve GG",
-                    "Valve II has flow rate=0; tunnels lead to valves AA, JJ",
-                    "Valve JJ has flow rate=21; tunnel leads to valve II",
-                )
+
+    system = ValveSystem.from_text(
+        "\n".join(
+            (
+                "Valve AA has flow rate=0; tunnels lead to valves DD, II, BB",
+                "Valve BB has flow rate=13; tunnels lead to valves CC, AA",
+                "Valve CC has flow rate=2; tunnels lead to valves DD, BB",
+                "Valve DD has flow rate=20; tunnels lead to valves CC, AA, EE",
+                "Valve EE has flow rate=3; tunnels lead to valves FF, DD",
+                "Valve FF has flow rate=0; tunnels lead to valves EE, GG",
+                "Valve GG has flow rate=0; tunnels lead to valves FF, HH",
+                "Valve HH has flow rate=22; tunnel leads to valve GG",
+                "Valve II has flow rate=0; tunnels lead to valves AA, JJ",
+                "Valve JJ has flow rate=21; tunnel leads to valve II",
             )
         )
-        == valves
     )
-    graph = shortest_distance_graph(valves)
-    assert len(graph) == 90
-    assert graph[("AA", "BB")] == 1
-    assert graph[("AA", "EE")] == 2
-    assert graph[("FF", "AA")] == 3
-    assert graph[("JJ", "BB")] == 3
 
-    one = State("AA", 0, frozenset(("AA", "FF", "GG", "II")), 0)
-    assert State.create_initial(valves) == one
-    assert one.reachable(valves, graph) == {
-        State("AA", 30, frozenset(("AA", "FF", "GG", "II")), 0),
-        State("BB", 2, frozenset(("AA", "BB", "FF", "GG", "II")), 13),
-        State("CC", 3, frozenset(("AA", "CC", "FF", "GG", "II")), 2),
-        State("DD", 2, frozenset(("AA", "DD", "FF", "GG", "II")), 20),
-        State("EE", 3, frozenset(("AA", "EE", "FF", "GG", "II")), 3),
-        State("HH", 6, frozenset(("AA", "FF", "GG", "HH", "II")), 22),
-        State("JJ", 3, frozenset(("AA", "FF", "GG", "II", "JJ")), 21),
+    assert system.valves == valves
+    assert len(system.graph) == 10
+    assert sum(len(node) for node in system.graph.values()) == 90
+    assert system.graph["AA"]["BB"] == 1
+    assert system.graph["AA"]["EE"] == 2
+    assert system.graph["FF"]["AA"] == 3
+    assert system.graph["JJ"]["BB"] == 3
+
+    possible = system.best_pressure_possibilities(30)
+    assert frozenset(("BB",)) in possible
+    assert frozenset(("AA", "GG")) not in possible
+    assert frozenset(("BB", "HH")) in possible
+    assert possible[frozenset(("BB", "CC", "DD", "EE", "HH", "JJ"))] == 1651
+
+    assert system.most_pressure_possible(30, 1) == 1651
+
+
+def test_part2() -> None:
+    """
+    Examples for Part 2.
+    """
+    valves = {
+        "AA": Valve("AA", 0, frozenset(("DD", "II", "BB"))),
+        "BB": Valve("BB", 13, frozenset(("CC", "AA"))),
+        "CC": Valve("CC", 2, frozenset(("DD", "BB"))),
+        "DD": Valve("DD", 20, frozenset(("CC", "AA", "EE"))),
+        "EE": Valve("EE", 3, frozenset(("FF", "DD"))),
+        "FF": Valve("FF", 0, frozenset(("EE", "GG"))),
+        "GG": Valve("GG", 0, frozenset(("FF", "HH"))),
+        "HH": Valve("HH", 22, frozenset(("GG",))),
+        "II": Valve("II", 0, frozenset(("AA", "JJ"))),
+        "JJ": Valve("JJ", 21, frozenset(("II",))),
     }
-
-    assert most_pressure_possible(valves) == 1651
-
-
-# def test_part2() -> None:
-#     """
-#     Examples for Part 2.
-#     """
-#     assert False
+    system = ValveSystem(valves)
+    possible = system.best_pressure_possibilities(26)
+    assert possible[frozenset(("DD", "HH", "EE"))] == 943
+    assert possible[frozenset(("JJ", "BB", "CC"))] == 764
+    assert system.most_pressure_possible(26, 2) == 1707
 
 
 def main() -> None:
@@ -249,10 +237,10 @@ def main() -> None:
     Calculate and output the solutions based on the real puzzle input.
     """
     data = aocd.get_data(year=2022, day=16)
-    valves = Valve.all_from_text(data)
+    system = ValveSystem.from_text(data)
 
-    print(f"Part 1: {most_pressure_possible(valves)}")
-    # print(f'Part 2: {p2}')
+    print(f"Part 1: {system.most_pressure_possible(30, 1)}")
+    print(f"Part 2: {system.most_pressure_possible(26, 2)}")
 
 
 if __name__ == "__main__":
