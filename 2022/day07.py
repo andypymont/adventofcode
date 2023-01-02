@@ -32,7 +32,7 @@ class FileSystem:
         self.folders = set()
         self.files = set()
 
-        path: tuple = ()
+        path: tuple[str, ...] = ()
         for line in text.splitlines():
             if line == "$ cd /":
                 path = ()

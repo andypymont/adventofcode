@@ -111,7 +111,7 @@ def test_part2() -> None:
         (
             frozenset("wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn"),
             frozenset("ttgJtRGJQctTZtZT"),
-            frozenset("CrZsJsPPZsGzwwsLwLmpwMDw"),Tuple[CommonItemFindingContainer, ...]:
+            frozenset("CrZsJsPPZsGzwwsLwLmpwMDw"),
         )
     )
 
